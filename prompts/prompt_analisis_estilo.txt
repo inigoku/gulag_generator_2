@@ -1,0 +1,21 @@
+Analiza el estilo literario del siguiente corpus.
+
+Devuelve un análisis exhaustivo que incluya:
+
+1. Tono dominante
+2. Ritmo y cadencia
+3. Léxico característico
+4. Temas recurrentes
+5. Recursos poéticos frecuentes
+6. Densidad metafórica
+7. Estructura típica de los poemas
+8. Uso de rima y métrica (si existe)
+9. Rasgos distintivos del estilo
+10. Prohibiciones estilísticas implícitas
+11. Influencias literarias detectables
+12. Energía emocional predominante
+13. Cómo se construyen las imágenes
+14. Cómo se manejan silencios, cortes y rupturas
+15. Qué hace único este estilo
+
+Devuelve el resultado en formato texto continuo, sin listas numeradas.

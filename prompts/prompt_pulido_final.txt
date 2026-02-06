@@ -1,0 +1,13 @@
+Pulsa el siguiente poema para maximizar su musicalidad, elegancia y coherencia estilística.
+
+Usa el PERFIL_ESTILISTICO como guía principal.
+
+Objetivos:
+- Refinar ritmo y cadencia.
+- Ajustar la densidad metafórica.
+- Mejorar la fluidez entre versos.
+- Mantener el tono emocional.
+- Respetar el contenido del poema corregido.
+- No alterar la estructura general salvo para mejorar la armonía.
+
+Devuelve únicamente el poema final.

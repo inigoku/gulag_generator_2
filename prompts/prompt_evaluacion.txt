@@ -1,0 +1,30 @@
+Evalúa el siguiente poema según los criterios técnicos y estilísticos proporcionados.
+
+Devuelve un JSON con esta estructura:
+
+{
+  "ok": true/false,
+  "problemas": [
+      "descripción del problema 1",
+      "descripción del problema 2"
+  ],
+  "sugerencias": [
+      "sugerencia 1",
+      "sugerencia 2"
+  ]
+}
+
+Evalúa:
+- Coherencia temática
+- Fidelidad al PERFIL_ESTILISTICO
+- Calidad de la rima (si aplica)
+- Calidad de la métrica (si aplica)
+- Repeticiones innecesarias
+- Rupturas de tono
+- Imágenes débiles o confusas
+- Falta de musicalidad
+- Exceso de literalidad
+- Problemas de ritmo
+- Problemas de estructura
+
+No reescribas el poema. Solo evalúa.

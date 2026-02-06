@@ -1,0 +1,13 @@
+Reescribe el siguiente poema corrigiendo únicamente los problemas detectados en la evaluación.
+
+Objetivos:
+- Mantener el estilo del PERFIL_ESTILISTICO.
+- Mantener el contenido esencial del poema.
+- Mejorar rima, métrica, ritmo o coherencia según las sugerencias.
+- Eliminar repeticiones.
+- Fortalecer imágenes débiles.
+- Ajustar tono si es necesario.
+- No añadir contenido innecesario.
+- No cambiar el tema.
+
+Devuelve únicamente el poema corregido, sin explicaciones.
