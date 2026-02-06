@@ -1,0 +1,89 @@
+import streamlit as st
+import sys
+import os
+
+# Aseguramos que se pueda importar desde el directorio actual
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from generar_poema import ejecutar_pipeline_poetico
+
+def main():
+    st.set_page_config(page_title="Generador de Poesía V2", page_icon="✒️", layout="centered")
+
+    st.title("Generador de Poesía V2: Sindar")
+    st.markdown("Configura los parámetros y genera poemas utilizando el pipeline poético (RAG + Crítica + Pulido).")
+
+    # --- Barra Lateral: Configuración de Modelos ---
+    with st.sidebar:
+        st.header("⚙️ Configuración de Modelos")
+        groq_model = st.selectbox(
+            "Modelo Groq (Crítica/Reescritura)",
+            ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
+            index=0
+        )
+        google_model = st.selectbox(
+            "Modelo Google (Generación/Pulido)",
+            ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-pro", "gemini-2.0-flash"],
+            index=0
+        )
+
+    # --- Configuración de Parámetros ---
+    with st.container():
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Valores por defecto tomados de main.py
+            estilo = st.text_input("Estilo", value="Estilo libre pero lírico")
+            extension = st.number_input("Extensión (versos)", min_value=4, max_value=100, value=20, step=1)
+
+        with col2:
+            tema = st.text_input("Tema", value="La emoción del básquet")
+            tono_extra = st.text_input("Tono Extra", value="Épico y apasionado")
+        
+        restricciones = st.text_area("Restricciones", value="Sin rima consonante forzada, sin referencias tecnológicas")
+
+    # --- Botón de Generación ---
+    st.markdown("---")
+    if st.button("Generar Poema", type="primary", use_container_width=True):
+        if not tema:
+            st.warning("⚠️ Por favor, escribe un tema para el poema.")
+        else:
+            params = {
+                "estilo": estilo,
+                "tema": tema,
+                "tono_extra": tono_extra,
+                "restricciones": restricciones,
+                "extension": extension,
+                "groq_model": groq_model,
+                "google_model": google_model
+            }
+
+            # --- Proceso de Generación ---
+            with st.spinner("🤖 El agente está consultando la obra, escribiendo y puliendo..."):
+                try:
+                    # Verificar ruta de ejecución para evitar errores de lectura de archivos
+                    if not os.path.exists("./generador_v2"):
+                        st.warning("⚠️ Advertencia: No se detectó el directorio './generador_v2'. Asegúrate de ejecutar streamlit desde la raíz del proyecto.")
+
+                    resultado = ejecutar_pipeline_poetico(params)
+                    
+                    st.success("¡Poema generado con éxito!")
+                    
+                    st.subheader("Poema Final")
+                    st.text_area("Resultado", value=resultado["poema_final"], height=500)
+
+                    with st.expander("Ver detalles del proceso"):
+                        st.markdown("**1. Poema Inicial (Gemini + RAG):**")
+                        st.text(resultado.get("poema_inicial", ""))
+                        
+                        st.markdown("**2. Crítica (Groq):**")
+                        st.json(resultado.get("critica_final", {}))
+                        
+                        st.markdown("**3. Poema Corregido:**")
+                        st.text(resultado.get("poema_corregido", ""))
+                    
+                except Exception as e:
+                    st.error(f"❌ Ocurrió un error: {e}")
+
+if __name__ == "__main__":
+    main()

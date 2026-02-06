@@ -23,7 +23,7 @@ if GOOGLE_API_KEY:
     from google import genai
     client = genai.Client(api_key=GOOGLE_API_KEY)
 
-def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía generativa."):
+def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía generativa.", model=None):
     url = "https://api.groq.com/openai/v1/chat/completions"
 
     headers = {
@@ -32,7 +32,7 @@ def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía gene
     }
 
     payload = {
-        "model": GROQ_MODEL,
+        "model": model or GROQ_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -42,7 +42,7 @@ def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía gene
     }
 
     print("=== DEBUG (GROQ) ===")
-    print("MODEL:", GROQ_MODEL)
+    print("MODEL:", payload["model"])
     print("API KEY:", "OK" if GROQ_API_KEY else "MISSING")
     print(f"--- SYSTEM PROMPT ---\n{system_prompt}\n---------------------")
     print(f"--- USER PROMPT ---\n{prompt}\n-------------------")
@@ -62,11 +62,11 @@ def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía gene
         return data["choices"][0]["message"]["content"]
     raise Exception("Demasiados intentos fallidos por rate limit (429)")
 
-def llamar_google(prompt, system_prompt=None):
+def llamar_google(prompt, system_prompt=None, model=None):
     if GOOGLE_API_KEY:
         print("=== DEBUG (GOOGLE AI STUDIO) ===")
         
-        print("MODEL:", GOOGLE_MODEL)
+        print("MODEL:", model or GOOGLE_MODEL)
         try:
             final_prompt = prompt
             if system_prompt:
@@ -74,7 +74,7 @@ def llamar_google(prompt, system_prompt=None):
 
             print(f"--- FULL PROMPT (GOOGLE) ---\n{final_prompt}\n----------------------------")
             response = client.models.generate_content(
-                model=GOOGLE_MODEL,
+                model=model or GOOGLE_MODEL,
                 contents=final_prompt
             )
             return response.text
@@ -106,13 +106,13 @@ def seleccionar(lista, k):
         return []
     return random.sample(lista, min(len(lista), k))
 
-def gemini_generar_poema(contexto, user):
+def gemini_generar_poema(contexto, user, model=None):
     prompt = f"{contexto}\n\nTAREA:\n{user}"
-    return llamar_google(prompt)
+    return llamar_google(prompt, model=model)
 
-def groq_evaluar_poema(poema, prompt, estilo, tema):
+def groq_evaluar_poema(poema, prompt, estilo, tema, model=None):
     full_prompt = f"{prompt}\n\nPOEMA:\n{poema}\n\nESTILO:\n{estilo}\n\nTEMA:\n{tema}"
-    resp = llamar_groq(full_prompt, system_prompt="Eres un crítico literario experto. Responde estrictamente en JSON.")
+    resp = llamar_groq(full_prompt, system_prompt="Eres un crítico literario experto. Responde estrictamente en JSON.", model=model)
     try:
         start = resp.find('{')
         end = resp.rfind('}') + 1
@@ -122,15 +122,15 @@ def groq_evaluar_poema(poema, prompt, estilo, tema):
         pass
     return {"ok": False, "problemas": ["Error formato JSON"], "sugerencias": []}
 
-def groq_reescribir_poema(poema, prompt, problemas, sugerencias, estilo):
+def groq_reescribir_poema(poema, prompt, problemas, sugerencias, estilo, model=None):
     probs = ", ".join(problemas)
     sugs = ", ".join(sugerencias)
     full_prompt = f"{prompt}\n\nPOEMA ORIGINAL:\n{poema}\n\nPROBLEMAS:\n{probs}\n\nSUGERENCIAS:\n{sugs}\n\nESTILO:\n{estilo}"
-    return llamar_groq(full_prompt, system_prompt="Eres un editor de poesía experto.")
+    return llamar_groq(full_prompt, system_prompt="Eres un editor de poesía experto.", model=model)
 
-def gemini_pulir_poema(contexto, poema, prompt):
+def gemini_pulir_poema(contexto, poema, prompt, model=None):
     full_prompt = f"{contexto}\n\nPOEMA PREVIO:\n{poema}\n\nINSTRUCCIONES DE PULIDO:\n{prompt}"
-    return llamar_google(full_prompt)
+    return llamar_google(full_prompt, model=model)
 
 def ejecutar_pipeline_poetico(params):
     base = "./generador_v2"
@@ -145,6 +145,9 @@ def ejecutar_pipeline_poetico(params):
     prompt_eval = cargar_prompt(f"{base}/prompts/prompt_evaluacion.txt")
     prompt_rewrite = cargar_prompt(f"{base}/prompts/prompt_reescritura.txt")
     prompt_pulido = cargar_prompt(f"{base}/prompts/prompt_pulido_final.txt")
+    
+    groq_model = params.get("groq_model")
+    google_model = params.get("google_model")
 
     # 6. CONSTRUIR CONTEXTO LARGO (GEMINI) — VERSIÓN SEGURA
     # Seleccionar solo los fragmentos necesarios
@@ -180,10 +183,10 @@ INSTRUCCIONES:
 )
 
     # 7. GENERACIÓN
-    POEMA_INICIAL = gemini_generar_poema(CONTEXTO_EXTENDIDO, f"Escribe un poema sobre: {params['tema']}")
+    POEMA_INICIAL = gemini_generar_poema(CONTEXTO_EXTENDIDO, f"Escribe un poema sobre: {params['tema']}", model=google_model)
 
     # 8. EVALUACIÓN
-    CRITICA = groq_evaluar_poema(POEMA_INICIAL, prompt_eval, perfil_estilistico, params['tema'])
+    CRITICA = groq_evaluar_poema(POEMA_INICIAL, prompt_eval, perfil_estilistico, params['tema'], model=groq_model)
 
     # 9. REESCRITURA
     POEMA_CORREGIDO = POEMA_INICIAL
@@ -194,13 +197,13 @@ INSTRUCCIONES:
         POEMA_CORREGIDO = groq_reescribir_poema(
             POEMA_CORREGIDO, prompt_rewrite, 
             CRITICA.get("problemas", []), CRITICA.get("sugerencias", []), 
-            perfil_estilistico
+            perfil_estilistico, model=groq_model
         )
-        CRITICA = groq_evaluar_poema(POEMA_CORREGIDO, prompt_eval, perfil_estilistico, params['tema'])
+        CRITICA = groq_evaluar_poema(POEMA_CORREGIDO, prompt_eval, perfil_estilistico, params['tema'], model=groq_model)
         iteraciones += 1
 
     # 10. PULIDO FINAL
-    POEMA_FINAL = gemini_pulir_poema(CONTEXTO_EXTENDIDO, POEMA_CORREGIDO, prompt_pulido)
+    POEMA_FINAL = gemini_pulir_poema(CONTEXTO_EXTENDIDO, POEMA_CORREGIDO, prompt_pulido, model=google_model)
 
     return {
         "poema_final": POEMA_FINAL,
