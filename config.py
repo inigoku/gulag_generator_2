@@ -10,18 +10,18 @@ except ImportError:
 load_dotenv()
 
 def get_config(key, default=None):
-    # 1. Prioridad: Variable de entorno (Local .env)
-    val = os.getenv(key)
-    if val is not None:
-        return val
-    
-    # 2. Fallback: Streamlit Secrets (Nube)
+    # 1. Prioridad: Streamlit Secrets (Nube / App Mode)
     if st is not None:
         try:
             if key in st.secrets:
                 return st.secrets[key]
         except Exception:
             pass
+
+    # 2. Fallback: Variable de entorno (Local .env)
+    val = os.getenv(key)
+    if val is not None:
+        return val
             
     return default
 
