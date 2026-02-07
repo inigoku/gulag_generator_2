@@ -2,15 +2,35 @@
 
 import os
 from dotenv import load_dotenv
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3-32b")
-REWORK_RETRIES = int(os.getenv("REWORK_RETRIES", "3"))
-DIALOG_RETRIES = int(os.getenv("DIALOG_RETRIES", "2"))
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GOOGLE_MODEL = os.getenv("GOOGLE_MODEL", "gemma-3-4b-it")
-BRAVE_SEARCH_API_KEY = os.getenv("BRAVE_SEARCH_API_KEY")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+def get_config(key, default=None):
+    # 1. Prioridad: Variable de entorno (Local .env)
+    val = os.getenv(key)
+    if val is not None:
+        return val
+    
+    # 2. Fallback: Streamlit Secrets (Nube)
+    if st is not None:
+        try:
+            if key in st.secrets:
+                return st.secrets[key]
+        except Exception:
+            pass
+            
+    return default
+
+GROQ_API_KEY = get_config("GROQ_API_KEY")
+GROQ_MODEL = get_config("GROQ_MODEL", "qwen/qwen3-32b")
+REWORK_RETRIES = int(get_config("REWORK_RETRIES", "3"))
+DIALOG_RETRIES = int(get_config("DIALOG_RETRIES", "2"))
+GOOGLE_API_KEY = get_config("GOOGLE_API_KEY")
+GOOGLE_MODEL = get_config("GOOGLE_MODEL", "gemma-3-4b-it")
+BRAVE_SEARCH_API_KEY = get_config("BRAVE_SEARCH_API_KEY")
+DEEPSEEK_API_KEY = get_config("DEEPSEEK_API_KEY")
+DEEPSEEK_MODEL = get_config("DEEPSEEK_MODEL", "deepseek-chat")
