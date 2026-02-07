@@ -123,7 +123,7 @@ def _llamar_deepseek(prompt):
         return f"Error API DeepSeek: {e}"
 
 def deepseek_analizar_estilo(fragmentos):
-    ruta_prompt = "./generador_v2/prompts/prompt_analisis_estilo.txt"
+    ruta_prompt = "./prompts/prompt_analisis_estilo.txt"
     if os.path.exists(ruta_prompt):
         with open(ruta_prompt, 'r', encoding='utf-8') as f:
             instrucciones = f.read().strip()
@@ -144,19 +144,19 @@ def generar_datos_iniciales():
     # 1. CONFIGURACIÓN
     ###############################################
 
-    config = cargar_configuracion("./generador_v2/config/claves.env",
-                                  "./generador_v2/config/modelos.yaml",
-                                  "./generador_v2/config/pesos_estilo.yaml")
+    config = cargar_configuracion("./config/claves.env",
+                                  "./config/modelos.yaml",
+                                  "./config/pesos_estilo.yaml")
 
     rutas = {
-        "pdfs_obra": "./generador_v2/data/pdfs/obra/",
-        "pdfs_influencias": "./generador_v2/data/pdfs/influencias/",
-        "corpus_obra": "./generador_v2/data/corpus/obra.txt",
-        "corpus_influencias": "./generador_v2/data/corpus/influencias.txt",
-        "chunks_obra": "./generador_v2/data/chunks/chunks_obra.json",
-        "chunks_influencias": "./generador_v2/data/chunks/chunks_influencias.json",
-        "chroma_obra": "./generador_v2/data/chroma/obra/",
-        "chroma_influencias": "./generador_v2/data/chroma/influencias/"
+        "pdfs_obra": "./data/pdfs/obra/",
+        "pdfs_influencias": "./data/pdfs/influencias/",
+        "corpus_obra": "./data/corpus/obra.txt",
+        "corpus_influencias": "./data/corpus/influencias.txt",
+        "chunks_obra": "./data/chunks/chunks_obra.json",
+        "chunks_influencias": "./data/chunks/chunks_influencias.json",
+        "chroma_obra": "./data/chroma/obra/",
+        "chroma_influencias": "./data/chroma/influencias/"
     }
 
     # Crear directorios necesarios si no existen
@@ -229,8 +229,8 @@ def generar_datos_iniciales():
     perfil_obra = deepseek_analizar_estilo(contexto_obra)
     perfil_influencias = deepseek_analizar_estilo(contexto_influencias)
 
-    guardar_texto(perfil_obra, "./generador_v2/estilo/perfil_obra.md")
-    guardar_texto(perfil_influencias, "./generador_v2/estilo/perfil_influencias.md")
+    guardar_texto(perfil_obra, "./estilo/perfil_obra.md")
+    guardar_texto(perfil_influencias, "./estilo/perfil_influencias.md")
 
     # 5bis.2 mezcla ponderada
     α = config["pesos_estilo"]["obra"]
@@ -238,8 +238,8 @@ def generar_datos_iniciales():
 
     perfil_estilistico_final = mezclar_perfiles(perfil_obra, perfil_influencias, α, β)
 
-    guardar_texto(perfil_estilistico_final, "./generador_v2/estilo/perfil_estilistico_final.md")
-    guardar_json({"alpha": α, "beta": β}, "./generador_v2/estilo/mezcla_estilo.json")
+    guardar_texto(perfil_estilistico_final, "./estilo/perfil_estilistico_final.md")
+    guardar_json({"alpha": α, "beta": β}, "./estilo/mezcla_estilo.json")
 
 
 

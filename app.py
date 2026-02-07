@@ -61,10 +61,6 @@ def main():
             # --- Proceso de Generación ---
             with st.spinner("🤖 El agente está consultando la obra, escribiendo y puliendo..."):
                 try:
-                    # Verificar ruta de ejecución para evitar errores de lectura de archivos
-                    if not os.path.exists("./generador_v2"):
-                        st.warning("⚠️ Advertencia: No se detectó el directorio './generador_v2'. Asegúrate de ejecutar streamlit desde la raíz del proyecto.")
-
                     resultado = ejecutar_pipeline_poetico(params)
                     
                     st.success("¡Poema generado con éxito!")
