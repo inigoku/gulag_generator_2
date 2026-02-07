@@ -133,7 +133,7 @@ def gemini_pulir_poema(contexto, poema, prompt, model=None):
     return llamar_google(full_prompt, model=model)
 
 def ejecutar_pipeline_poetico(params):
-    base = "./generador_v2"
+    base = "."
     
     # 0. RECUPERAR DATOS
     perfil_estilistico = leer_texto(f"{base}/estilo/perfil_estilistico_final.md")
