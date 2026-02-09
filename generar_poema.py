@@ -11,7 +11,10 @@ from utils_llamadas import llamar_groq, llamar_google, cargar_prompt, leer_texto
 class EstructuraFlexible(dict):
     """Permite acceso por punto (para prompt) y por clave (para f-strings)"""
     def __getattr__(self, key):
-        return self[key]
+        try:
+            return self[key]
+        except KeyError:
+            return f"[{key} no definido]"
 
 ###############################################################################
 # NUEVO PIPELINE POÉTICO (Basado en archivos)
@@ -72,6 +75,8 @@ def ejecutar_pipeline_poetico(params):
 
     # 2. NUEVO: GENERAR ESTRUCTURA POÉTICA
     estructura = generar_estructura_poetica(perfil)
+    if not isinstance(estructura, dict):
+        estructura = {}
     perfil["estructura"] = estructura
 
     # 3. SISTEMA DE PESOS ADAPTATIVO
