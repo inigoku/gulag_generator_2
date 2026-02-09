@@ -2,14 +2,15 @@ import streamlit as st
 import sys
 import os
 
+# Configuración de página debe ser el primer comando de Streamlit para evitar errores
+st.set_page_config(page_title="Generador de Poesía V2", page_icon="✒️", layout="centered")
+
 # Aseguramos que se pueda importar desde el directorio actual
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from generar_poema import ejecutar_pipeline_poetico
 
 def main():
-    st.set_page_config(page_title="Generador de Poesía V2", page_icon="✒️", layout="centered")
-
     st.title("Generador de Poesía V2: Sindar")
     st.markdown("Configura los parámetros y genera poemas utilizando el pipeline poético (RAG + Crítica + Pulido).")
 

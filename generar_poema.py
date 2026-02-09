@@ -158,6 +158,16 @@ def ejecutar_pipeline_poetico(params):
     texto_obra = "\n\n".join(fragmentos_obra)
     texto_influencias = "\n\n".join(fragmentos_influencias)
 
+    # Formatear las instrucciones primero para evitar conflictos con llaves en los textos
+    instrucciones_formateadas = prompt_maestro.format(
+        estilo=params.get("estilo", ""),
+        mezcla=params.get("mezcla", ""),
+        tema=params.get("tema", ""),
+        tono_extra=params.get("tono_extra", ""),
+        restricciones=params.get("restricciones", ""),
+        extension=params.get("extension", 14),
+    )
+
     # Construir el contexto extendido compacto
     CONTEXTO_EXTENDIDO = f"""
 PERFIL_ESTILISTICO:
@@ -170,17 +180,8 @@ CONTEXTO_INFLUENCIAS (fragmentos relevantes):
 {texto_influencias}
 
 INSTRUCCIONES:
-{prompt_maestro}
+{instrucciones_formateadas}
 """
-    
-    CONTEXTO_EXTENDIDO=CONTEXTO_EXTENDIDO.format(
-        estilo=params.get("estilo", ""),
-        mezcla=params.get("mezcla", ""),
-        tema=params.get("tema", ""),
-        tono_extra=params.get("tono_extra", ""),
-        restricciones=params.get("restricciones", ""),
-        extension=params.get("extension", 14),
-)
 
     # 7. GENERACIÓN
     POEMA_INICIAL = gemini_generar_poema(CONTEXTO_EXTENDIDO, f"Escribe un poema sobre: {params['tema']}", model=google_model)

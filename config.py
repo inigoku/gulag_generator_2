@@ -13,7 +13,7 @@ def get_config(key, default=None):
     # 1. Prioridad: Streamlit Secrets (Nube / App Mode)
     if st is not None:
         try:
-            if key in st.secrets:
+            if hasattr(st, "secrets") and key in st.secrets:
                 return st.secrets[key]
         except Exception:
             pass
