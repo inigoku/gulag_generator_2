@@ -35,7 +35,7 @@ def main():
         with col1:
             # Valores por defecto tomados de main.py
             estilo = st.text_input("Estilo", value="Estilo libre pero lírico")
-            extension = st.number_input("Extensión (versos)", min_value=4, max_value=100, value=20, step=1)
+            extension = st.selectbox("Extensión", ["muy corta", "corta", "media", "larga"], index=2)
 
         with col2:
             tema = st.text_input("Tema", value="La emoción del básquet")

@@ -13,7 +13,7 @@ def main():
         "tema": "La emoción del básquet",
         "tono_extra": "Épico y apasionado",
         "restricciones": "Sin rima consonante forzada, sin referencias tecnológicas",
-        "extension": 20
+        "extension": "media"
     }
     
     print(f"=== Ejecutando Pipeline Poético ===")

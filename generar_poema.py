@@ -1,110 +1,22 @@
 # agente.py
 
 import json
-import requests
-import itertools
-import random
-import os
 
-from config import (
-    GROQ_API_KEY, GROQ_MODEL, REWORK_RETRIES,
-    GOOGLE_MODEL, GOOGLE_API_KEY
-)
+from clasificar_intencion_poetica import clasificar_intencion_poetica
+from generar_estructura_poetica import generar_estructura_poetica
+from calcular_pesos import calcular_pesos
+from brave_search import brave_search
+from utils_llamadas import llamar_groq, llamar_google, cargar_prompt, leer_texto, cargar_json, seleccionar
 
-import unicodedata
-
-def limpiar_prompt(texto):
-    # Normaliza unicode (NFC) pero mantiene caracteres latinos como tildes y ñ
-    texto = unicodedata.normalize("NFC", texto)
-    return texto.strip()
-
-# Configuración para Google AI Studio (Capa gratuita sin Vertex)
-if GOOGLE_API_KEY:
-    from google import genai
-    client = genai.Client(api_key=GOOGLE_API_KEY)
-
-def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía generativa.", model=None):
-    url = "https://api.groq.com/openai/v1/chat/completions"
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {GROQ_API_KEY}"
-    }
-
-    payload = {
-        "model": model or GROQ_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.9,
-        "max_tokens": 1600
-    }
-
-    print("=== DEBUG (GROQ) ===")
-    print("MODEL:", payload["model"])
-    print("API KEY:", "OK" if GROQ_API_KEY else "MISSING")
-    print(f"--- SYSTEM PROMPT ---\n{system_prompt}\n---------------------")
-    print(f"--- USER PROMPT ---\n{prompt}\n-------------------")
-    print("PAYLOAD:", payload)
-
-
-    import time
-    max_retries = 5
-    for intento in range(max_retries):
-        response = requests.post(url, headers=headers, json=payload)
-        if response.status_code == 429:
-            print("Rate limit alcanzado. Esperando 10 segundos antes de reintentar...")
-            time.sleep(10)
-            continue
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
-    raise Exception("Demasiados intentos fallidos por rate limit (429)")
-
-def llamar_google(prompt, system_prompt=None, model=None):
-    if GOOGLE_API_KEY:
-        print("=== DEBUG (GOOGLE AI STUDIO) ===")
-        
-        print("MODEL:", model or GOOGLE_MODEL)
-        try:
-            final_prompt = prompt
-            if system_prompt:
-                final_prompt = f"INSTRUCCIONES DEL SISTEMA:\n{system_prompt}\n\n---\n\n{prompt}"
-
-            print(f"--- FULL PROMPT (GOOGLE) ---\n{final_prompt}\n----------------------------")
-            response = client.models.generate_content(
-                model=model or GOOGLE_MODEL,
-                contents=final_prompt
-            )
-            return response.text
-        except Exception as e:
-            raise Exception(f"Error llamando a Google AI Studio: {e}")
-    raise Exception("Google API Key no configurada")
+class EstructuraFlexible(dict):
+    """Permite acceso por punto (para prompt) y por clave (para f-strings)"""
+    def __getattr__(self, key):
+        return self[key]
 
 ###############################################################################
 # NUEVO PIPELINE POÉTICO (Basado en archivos)
 ###############################################################################
 
-def leer_texto(ruta):
-    if os.path.exists(ruta):
-        with open(ruta, 'r', encoding='utf-8') as f:
-            return f.read().strip()
-    return ""
-
-def cargar_prompt(ruta):
-    return leer_texto(ruta)
-
-def cargar_json(ruta):
-    if os.path.exists(ruta):
-        with open(ruta, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
-
-def seleccionar(lista, k):
-    if not lista:
-        return []
-    return random.sample(lista, min(len(lista), k))
 
 def gemini_generar_poema(contexto, user, model=None):
     prompt = f"{contexto}\n\nTAREA:\n{user}"
@@ -149,6 +61,43 @@ def ejecutar_pipeline_poetico(params):
     groq_model = params.get("groq_model")
     google_model = params.get("google_model")
 
+    # 1. CLASIFICACIÓN DE INTENCIÓN POÉTICA
+    perfil = clasificar_intencion_poetica(
+        params.get("tema", ""),
+        params.get("estilo_extra", ""),
+        params.get("tono_extra", ""),
+        params.get("restricciones", ""),
+        params.get("extension", "")
+    )
+
+    # 2. NUEVO: GENERAR ESTRUCTURA POÉTICA
+    estructura = generar_estructura_poetica(perfil)
+    perfil["estructura"] = estructura
+
+    # 3. SISTEMA DE PESOS ADAPTATIVO
+    pesos = calcular_pesos(perfil)
+    
+
+    # 3.1. ACTIVAR BRAVE SEARCH SEGÚN γ
+    contexto_factual = ""
+    if pesos["γ"] > 0.15:
+        resultados = brave_search(params.get("tema", ""))
+        contexto_factual = "\n\n".join(resultados[:5])
+        
+    # 3.2. FLEXIBILIDAD ESTRUCTURAL SEGÚN INTENCIÓN
+    rigidez = pesos.get("rigidez_estructural", 0.5)
+
+    # Si la intención es más libre, reducimos rigidez
+    if perfil.get("intencion") in ["lírica", "fluida", "experimental"]:
+        rigidez *= 0.5
+
+    # Si el usuario pide libertad explícita
+    if "libre" in params.get("restricciones", "").lower():
+        rigidez = 0.0
+
+    # Guardamos la rigidez para el prompt
+    perfil["rigidez"] = rigidez
+
     # 6. CONSTRUIR CONTEXTO LARGO (GEMINI) — VERSIÓN SEGURA
     # Seleccionar solo los fragmentos necesarios
     fragmentos_obra = seleccionar(chunks_obra, k=8)
@@ -160,28 +109,42 @@ def ejecutar_pipeline_poetico(params):
 
     # Formatear las instrucciones primero para evitar conflictos con llaves en los textos
     instrucciones_formateadas = prompt_maestro.format(
-        estilo=params.get("estilo", ""),
-        mezcla=params.get("mezcla", ""),
+        estilo=perfil_estilistico,
+        estructura=EstructuraFlexible(estructura),
+        mezcla=texto_obra,
+        influencias=texto_influencias,
         tema=params.get("tema", ""),
         tono_extra=params.get("tono_extra", ""),
         restricciones=params.get("restricciones", ""),
-        extension=params.get("extension", 14),
+        extension=params.get("extension", "")
     )
+
 
     # Construir el contexto extendido compacto
     CONTEXTO_EXTENDIDO = f"""
-PERFIL_ESTILISTICO:
-{perfil_estilistico}
+    PERFIL_ESTILISTICO:
+    {perfil_estilistico}
 
-CONTEXTO_OBRA (fragmentos relevantes):
-{texto_obra}
+    ESTRUCTURA_POETICA:
+    Número de estrofas: {estructura['num_estrofas']}
+    Versos por estrofa: {estructura['versos_por_estrofa']}
+    Tipo de verso: {estructura['tipo_verso']}
+    Ritmo: {estructura['ritmo']}
+    Progresión: {estructura['progresion']}
+    Notas: {estructura['notas']}
 
-CONTEXTO_INFLUENCIAS (fragmentos relevantes):
-{texto_influencias}
+    CONTEXTO_OBRA:
+    {texto_obra}
 
-INSTRUCCIONES:
-{instrucciones_formateadas}
-"""
+    CONTEXTO_INFLUENCIAS:
+    {texto_influencias}
+
+    CONTEXTO_FACTUAL (solo si γ > 0.15):
+    {contexto_factual}
+
+    INSTRUCCIONES:
+    {instrucciones_formateadas}
+    """
 
     # 7. GENERACIÓN
     POEMA_INICIAL = gemini_generar_poema(CONTEXTO_EXTENDIDO, f"Escribe un poema sobre: {params['tema']}", model=google_model)
@@ -210,5 +173,8 @@ INSTRUCCIONES:
         "poema_final": POEMA_FINAL,
         "poema_inicial": POEMA_INICIAL,
         "poema_corregido": POEMA_CORREGIDO,
-        "critica_final": CRITICA
+        "critica_final": CRITICA,
+        "estructura": estructura,
+        "pesos": pesos,
+        "perfil": perfil
     }
