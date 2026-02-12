@@ -40,6 +40,7 @@ def main():
         with col2:
             tema = st.text_input("Tema", value="La emoción del básquet")
             tono_extra = st.text_input("Tono Extra", value="Épico y apasionado")
+            crear_imagen = st.checkbox("Crear imagen", value=False)
         
         restricciones = st.text_area("Restricciones", value="Sin rima consonante forzada, sin referencias tecnológicas")
 
@@ -56,11 +57,13 @@ def main():
                 "restricciones": restricciones,
                 "extension": extension,
                 "groq_model": groq_model,
-                "google_model": google_model
+                "google_model": google_model,
+                "crear_imagen": crear_imagen
             }
 
             # --- Proceso de Generación ---
             with st.spinner("🤖 El agente está consultando la obra, escribiendo y puliendo..."):
+                
                 try:
                     resultado = ejecutar_pipeline_poetico(params)
                     
@@ -68,6 +71,10 @@ def main():
                     
                     st.subheader("Poema Final")
                     st.text_area("Resultado", value=resultado["poema_final"], height=500)
+
+                    if resultado.get("imagen"):
+                        st.subheader("Imagen Generada")
+                        st.image(resultado["imagen"], caption="Imagen generada a partir del poema.")
 
                     with st.expander("Ver detalles del proceso"):
                         st.markdown("**1. Poema Inicial (Gemini + RAG):**")

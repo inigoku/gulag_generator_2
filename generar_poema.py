@@ -47,6 +47,9 @@ def gemini_pulir_poema(contexto, poema, prompt, model=None):
     full_prompt = f"{contexto}\n\nPOEMA PREVIO:\n{poema}\n\nINSTRUCCIONES DE PULIDO:\n{prompt}"
     return llamar_google(full_prompt, model=model)
 
+def generar_imagen(poema, model=None):
+    return llamar_imagen(poema, model=model)
+
 def ejecutar_pipeline_poetico(params):
     base = "."
     
@@ -63,6 +66,7 @@ def ejecutar_pipeline_poetico(params):
     
     groq_model = params.get("groq_model")
     google_model = params.get("google_model")
+    crear_imagen = params.get("crear_imagen", False)
 
     # 1. CLASIFICACIÓN DE INTENCIÓN POÉTICA
     perfil = clasificar_intencion_poetica(
@@ -174,6 +178,18 @@ def ejecutar_pipeline_poetico(params):
     # 10. PULIDO FINAL
     POEMA_FINAL = gemini_pulir_poema(CONTEXTO_EXTENDIDO, POEMA_CORREGIDO, prompt_pulido, model=google_model)
 
+    # 11. GENERAR IMAGEN (Opcional)
+    imagen = None
+
+    if params.get("crear_imagen"):
+        try:
+            from utils_llamadas import generate_from_poem
+            imagen = generate_from_poem(POEMA_FINAL)
+        except Exception as e:
+            print("Error generando imagen:", e)
+            imagen = None
+
+
     return {
         "poema_final": POEMA_FINAL,
         "poema_inicial": POEMA_INICIAL,
@@ -181,5 +197,6 @@ def ejecutar_pipeline_poetico(params):
         "critica_final": CRITICA,
         "estructura": estructura,
         "pesos": pesos,
-        "perfil": perfil
+        "perfil": perfil,
+        "imagen": imagen
     }
