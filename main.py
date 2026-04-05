@@ -1,26 +1,38 @@
 import sys
 import os
+import datetime
 
 # Aseguramos que se pueda importar desde el directorio actual
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from generar_poema import ejecutar_pipeline_poetico
 
+def obtener_log_path():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"./logs/poetico_{timestamp}.log"
+
+LOG_PATH = obtener_log_path()
+flow_logs = []
+
+def loguear_etapa(etapa, prompt, respuesta):
+    entry = f"\n[{datetime.datetime.now().isoformat()}] ETAPA: {etapa}\nPROMPT:\n{prompt}\nRESPUESTA:\n{respuesta}\n{'-'*60}\n"
+    flow_logs.append(entry)
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    with open(LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(entry)
+
 def main():
-    # Valores por defecto para los parámetros (similares a construir_prompt_maestro)
     default_params = {
         "estilo": "Estilo libre pero lírico",
-        "tema": "La emoción del básquet",
-        "tono_extra": "Épico y apasionado",
-        "restricciones": "Sin rima consonante forzada, sin referencias tecnológicas",
-        "extension": "media"
+        "tema": "Alzheimer, memoria y desesperanza",
+        "tono_extra": "Triste pero esperanzador",
+        "restricciones": "Sin rima consonante forzada, sin referencias tecnológicas, sin palabros como poiesis, agencimientos, glosolalia, etc. Evitar clichés. No usar palabras como 'olvido' o 'recuerdo'.",
+        "extension": "media",
+        "loguear_etapa": loguear_etapa
     }
-    
-    print(f"=== Ejecutando Pipeline Poético ===")
-    print(f"Tema: {default_params['tema']}")
-    
+
     resultado = ejecutar_pipeline_poetico(default_params)
-    
+
     print("\n=== POEMA FINAL ===")
     print(resultado["poema_final"])
 

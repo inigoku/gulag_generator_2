@@ -4,7 +4,7 @@ El estilo literario que emerge es un **tejido complejo y polifónico** que oscil
 
 El **ritmo y cadencia** son **disonantes y deliberadamente fracturados**, basados en la respiración del pensamiento más que en métricas regulares. Se alternan **enumeraciones caóticas e incisivas** (de origen promocional o documental) con **frases largas de respiración ensayística** y **estallidos líricos concisos**. La estructura es **fragmentaria, modular y no lineal**, imitando el zapping digital o la navegación hipertextual, organizada como **collage o archivo** donde conviven voces diversas.
 
-El **léxico característico** es un léxico de **contaminación y fricción**: un **vocabulario de magia popular y mercadotecnia esotérica** ("amarres", "endulzamiento") y **términos tecnológicos y administrativos** ("código de barras", "banda magnética", "hipertextualidad") se mezclan con un **lenguaje filosófico y poético culto** ("poiésis", "agenciamientos", "entropía", "crepúsculo"). Esta colisión lexical genera un efecto de extrañamiento y actualización de lo lírico.
+El **léxico característico** es un léxico de **contaminación y fricción**: un **vocabulario de magia popular y mercadotecnia esotérica** y **términos tecnológicos y administrativos** se mezclan con un **lenguaje filosófico y poético culto**. Esta colisión lexical genera un efecto de extrañamiento y actualización de lo lírico.
 
 Los **temas recurrentes** giran en torno a la **pérdida y la huella**, la **eficacia y el fracaso** del lenguaje y la poesía, la **magia frente a la tecnología**, y la **mitología de lo cotidiano** como reliquias de una experiencia desintegrada. Se explora constantemente si el arte puede aún "solucionar problemas" en un mundo desencantado.
 

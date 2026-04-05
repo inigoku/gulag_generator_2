@@ -3,6 +3,7 @@
 import json
 
 from clasificar_intencion_poetica import clasificar_intencion_poetica
+from chroma import abrir_chroma, buscar_en_chroma
 from generar_estructura_poetica import generar_estructura_poetica
 from calcular_pesos import calcular_pesos
 from brave_search import brave_search
@@ -48,22 +49,31 @@ def gemini_pulir_poema(contexto, poema, prompt, model=None):
     return llamar_google(full_prompt, model=model)
 
 def generar_imagen(poema, model=None):
-    return llamar_imagen(poema, model=model)
+    from utils_llamadas import generate_from_poem
+    return generate_from_poem(poema)
 
 def ejecutar_pipeline_poetico(params):
     base = "."
-    
+    loguear_etapa = params.get("loguear_etapa")
+
     # 0. RECUPERAR DATOS
     perfil_estilistico = leer_texto(f"{base}/estilo/perfil_estilistico_final.md")
-    
+    if loguear_etapa:
+        loguear_etapa("Recuperar perfil estilístico", f"Ruta: {base}/estilo/perfil_estilistico_final.md", perfil_estilistico)
+
     chunks_obra = cargar_json(f"{base}/data/chunks/chunks_obra.json")
     chunks_influencias = cargar_json(f"{base}/data/chunks/chunks_influencias.json")
-    
+    if loguear_etapa:
+        loguear_etapa("Cargar chunks obra", f"Ruta: {base}/data/chunks/chunks_obra.json", str(chunks_obra))
+        loguear_etapa("Cargar chunks influencias", f"Ruta: {base}/data/chunks/chunks_influencias.json", str(chunks_influencias))
+
     prompt_maestro = cargar_prompt(f"{base}/prompts/prompt_maestro.txt")
     prompt_eval = cargar_prompt(f"{base}/prompts/prompt_evaluacion.txt")
     prompt_rewrite = cargar_prompt(f"{base}/prompts/prompt_reescritura.txt")
     prompt_pulido = cargar_prompt(f"{base}/prompts/prompt_pulido_final.txt")
-    
+    if loguear_etapa:
+        loguear_etapa("Cargar prompts", "Prompts cargados", f"Maestro: {prompt_maestro}\nEvaluación: {prompt_eval}\nReescritura: {prompt_rewrite}\nPulido: {prompt_pulido}")
+
     groq_model = params.get("groq_model")
     google_model = params.get("google_model")
     crear_imagen = params.get("crear_imagen", False)
@@ -76,15 +86,21 @@ def ejecutar_pipeline_poetico(params):
         params.get("restricciones", ""),
         params.get("extension", "")
     )
+    if loguear_etapa:
+        loguear_etapa("Clasificación de intención poética", f"Tema: {params.get('tema', '')}", str(perfil))
 
     # 2. NUEVO: GENERAR ESTRUCTURA POÉTICA
     estructura = generar_estructura_poetica(perfil)
     if not isinstance(estructura, dict):
         estructura = {}
     perfil["estructura"] = estructura
+    if loguear_etapa:
+        loguear_etapa("Generar estructura poética", "Perfil", str(estructura))
 
     # 3. SISTEMA DE PESOS ADAPTATIVO
     pesos = calcular_pesos(perfil)
+    if loguear_etapa:
+        loguear_etapa("Calcular pesos", "Perfil", str(pesos))
     
 
     # 3.1. ACTIVAR BRAVE SEARCH SEGÚN γ
@@ -92,6 +108,8 @@ def ejecutar_pipeline_poetico(params):
     if pesos["γ"] > 0.15:
         resultados = brave_search(params.get("tema", ""))
         contexto_factual = "\n\n".join(resultados[:5])
+        if loguear_etapa:
+            loguear_etapa("Brave Search", f"Tema: {params.get('tema', '')}", contexto_factual)
         
     # 3.2. FLEXIBILIDAD ESTRUCTURAL SEGÚN INTENCIÓN
     rigidez = pesos.get("rigidez_estructural", 0.5)
@@ -106,17 +124,21 @@ def ejecutar_pipeline_poetico(params):
 
     # Guardamos la rigidez para el prompt
     perfil["rigidez"] = rigidez
+    if loguear_etapa:
+        loguear_etapa("Rigidez estructural", "Perfil", str(rigidez))
 
     # 6. CONSTRUIR CONTEXTO LARGO (GEMINI) — VERSIÓN SEGURA
-    # Seleccionar solo los fragmentos necesarios
-    fragmentos_obra = seleccionar(chunks_obra, k=8)
-    fragmentos_influencias = seleccionar(chunks_influencias, k=5)
+    chroma_obra = abrir_chroma(f"{base}/data/chroma/obra/")
+    chroma_influencias = abrir_chroma(f"{base}/data/chroma/influencias/")
+    fragmentos_obra = buscar_en_chroma(chroma_obra, params['tema'], k=30)
+    fragmentos_influencias = buscar_en_chroma(chroma_influencias, params['tema'], k=30)
+    if loguear_etapa:
+        loguear_etapa("Buscar en Chroma obra", f"Tema: {params['tema']}", str(fragmentos_obra))
+        loguear_etapa("Buscar en Chroma influencias", f"Tema: {params['tema']}", str(fragmentos_influencias))
 
-    # Compactar los fragmentos seleccionados
     texto_obra = "\n\n".join(fragmentos_obra)
     texto_influencias = "\n\n".join(fragmentos_influencias)
 
-    # Formatear las instrucciones primero para evitar conflictos con llaves en los textos
     instrucciones_formateadas = prompt_maestro.format(
         estilo=perfil_estilistico,
         estructura=EstructuraFlexible(estructura),
@@ -127,9 +149,9 @@ def ejecutar_pipeline_poetico(params):
         restricciones=params.get("restricciones", ""),
         extension=params.get("extension", "")
     )
+    if loguear_etapa:
+        loguear_etapa("Formatear instrucciones", "Prompt maestro", instrucciones_formateadas)
 
-
-    # Construir el contexto extendido compacto
     CONTEXTO_EXTENDIDO = f"""
     PERFIL_ESTILISTICO:
     {perfil_estilistico}
@@ -154,49 +176,102 @@ def ejecutar_pipeline_poetico(params):
     INSTRUCCIONES:
     {instrucciones_formateadas}
     """
+    if loguear_etapa:
+        loguear_etapa("Construir contexto extendido", "Contexto", CONTEXTO_EXTENDIDO)
 
     # 7. GENERACIÓN
-    POEMA_INICIAL = gemini_generar_poema(CONTEXTO_EXTENDIDO, f"Escribe un poema sobre: {params['tema']}", model=google_model)
+    prompt_generacion = f"{CONTEXTO_EXTENDIDO}\n\nTAREA:\nEscribe un poema sobre: {params['tema']}"
+    POEMA_INICIAL = llamar_google(prompt_generacion, model=google_model)
+    if loguear_etapa:
+        loguear_etapa("Generar poema inicial", prompt_generacion, POEMA_INICIAL)
 
     # 8. EVALUACIÓN
-    CRITICA = groq_evaluar_poema(POEMA_INICIAL, prompt_eval, perfil_estilistico, params['tema'], model=groq_model)
+    prompt_evaluacion = f"{prompt_eval}\n\nPOEMA:\n{POEMA_INICIAL}\n\nESTILO:\n{perfil_estilistico}\n\nTEMA:\n{params['tema']}"
+    CRITICA = llamar_groq(prompt_evaluacion, system_prompt="Eres un crítico literario experto. Responde estrictamente en JSON.", model=groq_model)
+    if loguear_etapa:
+        loguear_etapa("Evaluar poema inicial", prompt_evaluacion, str(CRITICA))
 
     # 9. REESCRITURA
     POEMA_CORREGIDO = POEMA_INICIAL
     iteraciones = 0
     max_iter = 3
 
-    while not CRITICA.get("ok", False) and iteraciones < max_iter:
-        POEMA_CORREGIDO = groq_reescribir_poema(
-            POEMA_CORREGIDO, prompt_rewrite, 
-            CRITICA.get("problemas", []), CRITICA.get("sugerencias", []), 
-            perfil_estilistico, model=groq_model
-        )
-        CRITICA = groq_evaluar_poema(POEMA_CORREGIDO, prompt_eval, perfil_estilistico, params['tema'], model=groq_model)
+    while not (isinstance(CRITICA, dict) and CRITICA.get("ok", False)) and iteraciones < max_iter:
+        probs = ", ".join(CRITICA.get("problemas", [])) if isinstance(CRITICA, dict) else ""
+        sugs = ", ".join(CRITICA.get("sugerencias", [])) if isinstance(CRITICA, dict) else ""
+        prompt_reescritura = f"{prompt_rewrite}\n\nPOEMA ORIGINAL:\n{POEMA_CORREGIDO}\n\nPROBLEMAS:\n{probs}\n\nSUGERENCIAS:\n{sugs}\n\nESTILO:\n{perfil_estilistico}"
+        POEMA_CORREGIDO = llamar_groq(prompt_reescritura, system_prompt="Eres un editor de poesía experto.", model=groq_model)
+        if loguear_etapa:
+            loguear_etapa("Reescribir poema", prompt_reescritura, POEMA_CORREGIDO)
+        prompt_evaluacion_corregido = f"{prompt_eval}\n\nPOEMA:\n{POEMA_CORREGIDO}\n\nESTILO:\n{perfil_estilistico}\n\nTEMA:\n{params['tema']}"
+        CRITICA = llamar_groq(prompt_evaluacion_corregido, system_prompt="Eres un crítico literario experto. Responde estrictamente en JSON.", model=groq_model)
+        if loguear_etapa:
+            loguear_etapa("Evaluar poema corregido", prompt_evaluacion_corregido, str(CRITICA))
         iteraciones += 1
 
     # 10. PULIDO FINAL
-    POEMA_FINAL = gemini_pulir_poema(CONTEXTO_EXTENDIDO, POEMA_CORREGIDO, prompt_pulido, model=google_model)
+    prompt_pulido_final = f"{CONTEXTO_EXTENDIDO}\n\nPOEMA PREVIO:\n{POEMA_CORREGIDO}\n\nINSTRUCCIONES DE PULIDO:\n{prompt_pulido}"
+    POEMA_FINAL = llamar_google(prompt_pulido_final, model=google_model)
+    if loguear_etapa:
+        loguear_etapa("Pulido final", prompt_pulido_final, POEMA_FINAL)
 
     # 11. GENERAR IMAGEN (Opcional)
     imagen = None
-
     if params.get("crear_imagen"):
         try:
             from utils_llamadas import generate_from_poem
             imagen = generate_from_poem(POEMA_FINAL)
+            if loguear_etapa:
+                loguear_etapa("Generar imagen", "Poema final", str(imagen))
         except Exception as e:
-            print("Error generando imagen:", e)
+            if loguear_etapa:
+                loguear_etapa("Error generando imagen", "Poema final", str(e))
             imagen = None
 
+    # 12. GENERAR AUDIO (Opcional)
+    audio_url = None
+    audio_estilo = None
+    audio_task_id = None
+    audio_status = None
+    audio_error = None
+    if params.get("crear_audio"):
+        try:
+            from utils_llamadas import generar_audio_poema_con_suno
+            audio_resultado = generar_audio_poema_con_suno(
+                poema_texto=POEMA_FINAL,
+                contexto_poetico=CONTEXTO_EXTENDIDO,
+                tema=params.get("tema", ""),
+                tono_extra=params.get("tono_extra", ""),
+                model_google=google_model,
+                titulo=params.get("audio_title", ""),
+                instrumental=params.get("audio_instrumental", False),
+                wait_audio=params.get("audio_wait", True),
+                duracion_segundos=params.get("audio_duracion_seg", 90)
+            )
+            audio_url = audio_resultado.get("audio_url")
+            audio_estilo = audio_resultado.get("estilo_musical")
+            audio_task_id = audio_resultado.get("task_id")
+            audio_status = audio_resultado.get("status")
+            if loguear_etapa:
+                loguear_etapa("Generar audio", "Poema final + contexto", str(audio_resultado))
+        except Exception as e:
+            audio_error = str(e)
+            if loguear_etapa:
+                loguear_etapa("Error generando audio", "Poema final + contexto", audio_error)
 
     return {
         "poema_final": POEMA_FINAL,
         "poema_inicial": POEMA_INICIAL,
         "poema_corregido": POEMA_CORREGIDO,
         "critica_final": CRITICA,
+        "contexto_extendido": CONTEXTO_EXTENDIDO,
         "estructura": estructura,
         "pesos": pesos,
         "perfil": perfil,
-        "imagen": imagen
+        "imagen": imagen,
+        "audio_url": audio_url,
+        "audio_estilo": audio_estilo,
+        "audio_task_id": audio_task_id,
+        "audio_status": audio_status,
+        "audio_error": audio_error
     }

@@ -1,0 +1,83 @@
+Analiza la intención poética del usuario a partir de estos elementos:
+
+TEMA:
+""{tema}""
+
+ESTILO EXTRA:
+""{estilo_extra}""
+
+TONO EXTRA:
+""{tono_extra}""
+
+RESTRICCIONES:
+""{restricciones}""
+
+EXTENSIÓN DESEADA:
+""{extension}""
+
+Clasifica el conjunto en estas dimensiones:
+
+1. categoria (elige una):
+   - intimo
+   - conceptual
+   - cultural
+   - experimental
+   - narrativo
+
+2. tono_emocional (elige uno):
+   - sereno, melancólico, luminoso, oscuro, épico, íntimo, contemplativo, tenso
+
+3. nivel_abstraccion (elige uno):
+   - alto, medio, bajo
+
+4. grado_factualidad (elige uno):
+   - alto, medio, bajo
+
+5. densidad_metaforica (elige uno):
+   - alta, media, baja
+
+6. intencion_poetica (elige una):
+   - evocativa, descriptiva, reflexiva, narrativa, disruptiva
+
+7. estilo_extra_detectado:
+   - resume en 1 frase qué estética adicional pide el usuario
+
+8. restricciones_detectadas:
+   - resume en 1 frase las limitaciones formales o estilísticas
+
+9. extension_detectada (elige una):
+   - muy_corta
+   - corta
+   - media
+   - larga
+   - muy_larga
+
+10. estructura_poetica (genera una estructura adecuada):
+   - número de estrofas
+   - versos por estrofa
+   - tipo de verso (breve, largo, libre, medido)
+   - ritmo sugerido
+   - progresión interna (inicio → desarrollo → cierre)
+   - notas sobre restricciones formales
+
+Devuelve la respuesta en formato JSON:
+
+{
+  ""categoria"": ""..."",
+  ""tono_emocional"": ""..."",
+  ""nivel_abstraccion"": ""..."",
+  ""grado_factualidad"": ""..."",
+  ""densidad_metaforica"": ""..."",
+  ""intencion_poetica"": ""..."",
+  ""estilo_extra"": ""..."",
+  ""restricciones"": ""..."",
+  ""extension"": ""..."",
+  ""estructura"": {
+      ""num_estrofas"": ...,
+      ""versos_por_estrofa"": [...],
+      ""tipo_verso"": ""..."",
+      ""ritmo"": ""..."",
+      ""progresion"": ""..."",
+      ""notas"": ""...""
+  }
+}
