@@ -3,9 +3,5 @@ requests
 python-dotenv
 google-genai
 pyyaml
-<<<<<<< HEAD
-chromadb
-=======
 chromadb>=0.4.24
 protobuf==3.20.3
->>>>>>> a2f8785 (Add new imports)
