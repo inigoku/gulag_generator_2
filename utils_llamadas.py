@@ -1,6 +1,6 @@
 from config import (
     GROQ_API_KEY, GROQ_MODEL, REWORK_RETRIES,
-    GOOGLE_MODEL, GOOGLE_API_KEY,
+    GOOGLE_MODEL, GOOGLE_API_KEY, GOOGLE_FAST_MODEL,
     GOOGLE_MUSIC_MODEL, GOOGLE_MUSIC_VOICE,
 )
 
@@ -44,6 +44,28 @@ def limpiar_prompt(texto):
 # ============================
 
 def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía generativa.", model=None):
+    def _fallback_gemini_fast(origen_error):
+        if not GOOGLE_API_KEY:
+            raise Exception(
+                f"Error llamando a Groq y sin fallback disponible (Google API Key no configurada): {origen_error}"
+            )
+        if google_client is None:
+            raise Exception(
+                f"Error llamando a Groq y sin fallback disponible (cliente Google no inicializado): {origen_error}"
+            )
+
+        fallback_prompt = (
+            f"INSTRUCCIONES DEL SISTEMA:\n{system_prompt}\n\n"
+            f"---\n\n"
+            f"TAREA DEL USUARIO:\n{prompt}"
+        )
+        print("Fallback activado: Groq -> Gemini Fast")
+        response = google_client.models.generate_content(
+            model=GOOGLE_FAST_MODEL,
+            contents=fallback_prompt,
+        )
+        return response.text
+
     url = "https://api.groq.com/openai/v1/chat/completions"
 
     headers = {
@@ -71,19 +93,25 @@ def llamar_groq(prompt, system_prompt="Eres un asistente experto en poesía gene
     import time
     max_retries = REWORK_RETRIES
 
-    for intento in range(max_retries):
-        response = requests.post(url, headers=headers, json=payload)
+    if not GROQ_API_KEY:
+        return _fallback_gemini_fast("GROQ_API_KEY no configurada")
 
-        if response.status_code == 429:
-            print("Rate limit alcanzado. Esperando 10 segundos antes de reintentar...")
-            time.sleep(10)
-            continue
+    try:
+        for intento in range(max_retries):
+            response = requests.post(url, headers=headers, json=payload)
 
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
+            if response.status_code == 429:
+                print("Rate limit alcanzado. Esperando 10 segundos antes de reintentar...")
+                time.sleep(10)
+                continue
 
-    raise Exception("Demasiados intentos fallidos por rate limit (429)")
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return _fallback_gemini_fast(str(e))
+
+    return _fallback_gemini_fast("Demasiados intentos fallidos por rate limit (429)")
 
 
 
