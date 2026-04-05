@@ -1,0 +1,12 @@
+{
+  "nombre": "poema2",
+  "creado_en": "20260405_160037",
+  "tema": "",
+  "tono_extra": "",
+  "poema_path": "poema.txt",
+  "imagen_path": null,
+  "audio_path": "audio.mp3",
+  "audio_url": "https://musicfile.removeai.ai/MjYxMWMwMDUtYTY1NS00YTFmLWJlNjYtZmJmYWRiZjMzNDA2",
+  "audio_status": "TEXT_SUCCESS",
+  "audio_task_id": "f39c9c27c1db79d7881c9eb36e4a3848"
+}

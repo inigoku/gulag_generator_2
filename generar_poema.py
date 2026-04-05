@@ -52,6 +52,133 @@ def generar_imagen(poema, model=None):
     from utils_llamadas import generate_from_poem
     return generate_from_poem(poema)
 
+
+def _parsear_critica_json(critica_raw):
+    if isinstance(critica_raw, dict):
+        return critica_raw
+
+    if isinstance(critica_raw, str):
+        try:
+            start = critica_raw.find("{")
+            end = critica_raw.rfind("}") + 1
+            if start != -1 and end > start:
+                return json.loads(critica_raw[start:end])
+        except Exception:
+            pass
+
+    return {"ok": False, "problemas": ["Error formato JSON"], "sugerencias": []}
+
+
+def ejecutar_rework_poetico(params):
+    base = "."
+    loguear_etapa = params.get("loguear_etapa")
+
+    poema_base = (params.get("poema_base") or "").strip()
+    comentario_rework = (params.get("comentario_rework") or "").strip()
+    if not poema_base:
+        raise Exception("No hay poema base para afinar.")
+
+    perfil_estilistico = leer_texto(f"{base}/estilo/perfil_estilistico_final.md")
+    prompt_eval = cargar_prompt(f"{base}/prompts/prompt_evaluacion.txt")
+    prompt_rewrite = cargar_prompt(f"{base}/prompts/prompt_reescritura.txt")
+    prompt_pulido = cargar_prompt(f"{base}/prompts/prompt_pulido_final.txt")
+
+    groq_model = params.get("groq_model")
+    google_model = params.get("google_model")
+    tema = params.get("tema", "")
+    tono_extra = params.get("tono_extra", "")
+    contexto_extendido = params.get("contexto_extendido", "")
+
+    # Si no hay contexto extenso (p.ej., guardados antiguos), construimos uno mínimo
+    # para no romper la etapa de pulido final.
+    if not (contexto_extendido or "").strip():
+        contexto_extendido = (
+            "PERFIL_ESTILISTICO:\n"
+            f"{perfil_estilistico}\n\n"
+            "CONTEXTO_MINIMO_REWORK:\n"
+            f"TEMA: {tema}\n"
+            f"TONO_EXTRA: {tono_extra}\n"
+            "ORIGEN: rework sobre poema ya generado"
+        )
+
+    if loguear_etapa:
+        loguear_etapa("Afinado - Entrada", f"Tema: {tema}", f"Comentario: {comentario_rework}\n\nPoema base:\n{poema_base}")
+
+    # 1) REWORK inicial guiado por comentario del usuario
+    prompt_rework = (
+        f"{prompt_rewrite}\n\n"
+        f"COMENTARIO DEL USUARIO (prioritario):\n{comentario_rework or 'Sin comentario explícito.'}\n\n"
+        f"POEMA ORIGINAL:\n{poema_base}\n\n"
+        f"PROBLEMAS:\nDerivados del comentario del usuario\n\n"
+        f"SUGERENCIAS:\nAplica exactamente la intención del comentario manteniendo coherencia y calidad poética\n\n"
+        f"ESTILO:\n{perfil_estilistico}"
+    )
+    POEMA_CORREGIDO = llamar_groq(prompt_rework, system_prompt="Eres un editor de poesía experto.", model=groq_model)
+    if loguear_etapa:
+        loguear_etapa("Afinado - Rework inicial", prompt_rework, POEMA_CORREGIDO)
+
+    # 2) EVALUACIÓN + 3) REESCRITURA iterativa
+    prompt_evaluacion = f"{prompt_eval}\n\nPOEMA:\n{POEMA_CORREGIDO}\n\nESTILO:\n{perfil_estilistico}\n\nTEMA:\n{tema}"
+    CRITICA = _parsear_critica_json(
+        llamar_groq(
+            prompt_evaluacion,
+            system_prompt="Eres un crítico literario experto. Responde estrictamente en JSON.",
+            model=groq_model,
+        )
+    )
+    if loguear_etapa:
+        loguear_etapa("Afinado - Evaluación", prompt_evaluacion, str(CRITICA))
+
+    iteraciones = 0
+    max_iter = 3
+    while not CRITICA.get("ok", False) and iteraciones < max_iter:
+        probs = ", ".join(CRITICA.get("problemas", []))
+        sugs = ", ".join(CRITICA.get("sugerencias", []))
+        prompt_reescritura = (
+            f"{prompt_rewrite}\n\n"
+            f"COMENTARIO DEL USUARIO (mantener intención):\n{comentario_rework or 'Sin comentario explícito.'}\n\n"
+            f"POEMA ORIGINAL:\n{POEMA_CORREGIDO}\n\n"
+            f"PROBLEMAS:\n{probs}\n\n"
+            f"SUGERENCIAS:\n{sugs}\n\n"
+            f"ESTILO:\n{perfil_estilistico}"
+        )
+        POEMA_CORREGIDO = llamar_groq(prompt_reescritura, system_prompt="Eres un editor de poesía experto.", model=groq_model)
+        if loguear_etapa:
+            loguear_etapa("Afinado - Reescritura", prompt_reescritura, POEMA_CORREGIDO)
+
+        prompt_evaluacion = f"{prompt_eval}\n\nPOEMA:\n{POEMA_CORREGIDO}\n\nESTILO:\n{perfil_estilistico}\n\nTEMA:\n{tema}"
+        CRITICA = _parsear_critica_json(
+            llamar_groq(
+                prompt_evaluacion,
+                system_prompt="Eres un crítico literario experto. Responde estrictamente en JSON.",
+                model=groq_model,
+            )
+        )
+        if loguear_etapa:
+            loguear_etapa("Afinado - Reevaluación", prompt_evaluacion, str(CRITICA))
+
+        iteraciones += 1
+
+    # 4) PULIDO FINAL
+    prompt_pulido_final = f"{contexto_extendido}\n\nPOEMA PREVIO:\n{POEMA_CORREGIDO}\n\nINSTRUCCIONES DE PULIDO:\n{prompt_pulido}"
+    POEMA_FINAL = llamar_google(prompt_pulido_final, model=google_model)
+    if loguear_etapa:
+        loguear_etapa("Afinado - Pulido final", prompt_pulido_final, POEMA_FINAL)
+
+    return {
+        "poema_final": POEMA_FINAL,
+        "poema_inicial": poema_base,
+        "poema_corregido": POEMA_CORREGIDO,
+        "critica_final": CRITICA,
+        "contexto_extendido": contexto_extendido,
+        "comentario_rework": comentario_rework,
+        "insumos_pulido": {
+            "contexto_extendido": contexto_extendido,
+            "tema": tema,
+            "tono_extra": tono_extra,
+        },
+    }
+
 def ejecutar_pipeline_poetico(params):
     base = "."
     loguear_etapa = params.get("loguear_etapa")
@@ -230,6 +357,7 @@ def ejecutar_pipeline_poetico(params):
 
     # 12. GENERAR AUDIO (Opcional)
     audio_url = None
+    audio_bytes = None
     audio_estilo = None
     audio_task_id = None
     audio_status = None
@@ -249,6 +377,7 @@ def ejecutar_pipeline_poetico(params):
                 duracion_segundos=params.get("audio_duracion_seg", 90)
             )
             audio_url = audio_resultado.get("audio_url")
+            audio_bytes = audio_resultado.get("audio_bytes")
             audio_estilo = audio_resultado.get("estilo_musical")
             audio_task_id = audio_resultado.get("task_id")
             audio_status = audio_resultado.get("status")
@@ -265,11 +394,18 @@ def ejecutar_pipeline_poetico(params):
         "poema_corregido": POEMA_CORREGIDO,
         "critica_final": CRITICA,
         "contexto_extendido": CONTEXTO_EXTENDIDO,
+        "insumos_pulido": {
+            "contexto_extendido": CONTEXTO_EXTENDIDO,
+            "tema": params.get("tema", ""),
+            "tono_extra": params.get("tono_extra", ""),
+        },
+        "historial_afinados": [],
         "estructura": estructura,
         "pesos": pesos,
         "perfil": perfil,
         "imagen": imagen,
         "audio_url": audio_url,
+        "audio_bytes": audio_bytes,
         "audio_estilo": audio_estilo,
         "audio_task_id": audio_task_id,
         "audio_status": audio_status,
