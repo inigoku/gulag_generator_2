@@ -49,13 +49,15 @@ def main():
     base_path = "." # Asume que se ejecuta desde generador_v2/
     path_obra = os.path.join(base_path, "data/chroma/obra")
     path_influencias = os.path.join(base_path, "data/chroma/influencias")
-    path_folklore = os.path.join(base_path, "data/chroma/folklore")
+    path_folklore1 = os.path.join(base_path, "data/chroma/folklore1")
+    path_folklore2 = os.path.join(base_path, "data/chroma/folklore2")
 
     # Diagnosticar rutas
     print(f"📍 Buscando datos en: {os.path.abspath(base_path)}")
     print(f"   - Obra: {os.path.abspath(path_obra)} {'✓' if os.path.exists(path_obra) else '✗ NO EXISTE'}")
     print(f"   - Influencias: {os.path.abspath(path_influencias)} {'✓' if os.path.exists(path_influencias) else '✗ NO EXISTE'}")
-    print(f"   - Folklore: {os.path.abspath(path_folklore)} {'✓' if os.path.exists(path_folklore) else '✗ NO EXISTE'}")
+    print(f"   - Folklore 1: {os.path.abspath(path_folklore1)} {'✓' if os.path.exists(path_folklore1) else '✗ NO EXISTE'}")
+    print(f"   - Folklore 2: {os.path.abspath(path_folklore2)} {'✓' if os.path.exists(path_folklore2) else '✗ NO EXISTE'}")
     print()
 
     # Cargar embeddings
@@ -69,12 +71,17 @@ def main():
     if embeddings_influencias is not None:
         print(f"  ✓ {len(embeddings_influencias)} embeddings cargados")
 
-    print("Cargando embeddings de 'folklore'...")
-    embeddings_folklore, hover_folklore = cargar_embeddings_de_coleccion(path_folklore)
-    if embeddings_folklore is not None:
-        print(f"  ✓ {len(embeddings_folklore)} embeddings cargados")
+    print("Cargando embeddings de 'folklore1'...")
+    embeddings_folklore1, hover_folklore1 = cargar_embeddings_de_coleccion(path_folklore1)
+    if embeddings_folklore1 is not None:
+        print(f"  ✓ {len(embeddings_folklore1)} embeddings cargados")
 
-    if embeddings_obra is None and embeddings_influencias is None and embeddings_folklore is None:
+    print("Cargando embeddings de 'folklore2'...")
+    embeddings_folklore2, hover_folklore2 = cargar_embeddings_de_coleccion(path_folklore2)
+    if embeddings_folklore2 is not None:
+        print(f"  ✓ {len(embeddings_folklore2)} embeddings cargados")
+
+    if embeddings_obra is None and embeddings_influencias is None and embeddings_folklore1 is None and embeddings_folklore2 is None:
         print("No se pudieron cargar embeddings de ninguna colección. Saliendo.")
         return
 
@@ -93,10 +100,15 @@ def main():
         labels.extend(['Influencias'] * len(embeddings_influencias))
         hover_texts.extend(hover_influencias)
 
-    if embeddings_folklore is not None:
-        all_embeddings.append(embeddings_folklore)
-        labels.extend(['Folklore'] * len(embeddings_folklore))
-        hover_texts.extend(hover_folklore)
+    if embeddings_folklore1 is not None:
+        all_embeddings.append(embeddings_folklore1)
+        labels.extend(['Folklore 1'] * len(embeddings_folklore1))
+        hover_texts.extend(hover_folklore1)
+
+    if embeddings_folklore2 is not None:
+        all_embeddings.append(embeddings_folklore2)
+        labels.extend(['Folklore 2'] * len(embeddings_folklore2))
+        hover_texts.extend(hover_folklore2)
 
     all_embeddings = np.vstack(all_embeddings)
 
@@ -118,7 +130,7 @@ def main():
         embeddings_3d = pca.fit_transform(all_embeddings)
 
     # Definir colores según etiqueta
-    color_map = {'Obra': 0, 'Influencias': 0.5, 'Folklore': 1}
+    color_map = {'Obra': 0, 'Influencias': 0.4, 'Folklore 1': 0.8, 'Folklore 2': 1}
     colors = [color_map[label] for label in labels]
 
     # Crear la figura 3D con Plotly
@@ -133,7 +145,7 @@ def main():
         hovertemplate='<b>%{customdata}</b><br><br>%{text}<extra></extra>'
     )])
 
-    fig.update_layout(title=f'Visualización 3D de Embeddings ({args.metodo.upper()} - Obra vs. Influencias vs. Folklore)',
+    fig.update_layout(title=f'Visualización 3D de Embeddings ({args.metodo.upper()} - Obra vs. Influencias vs. Folklore 1/2)',
                       scene=dict(xaxis_title='Dim 1', yaxis_title='Dim 2', zaxis_title='Dim 3'),
                       margin=dict(r=20, b=10, l=10, t=40))
 

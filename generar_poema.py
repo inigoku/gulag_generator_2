@@ -3,7 +3,7 @@
 import json
 
 from clasificar_intencion_poetica import clasificar_intencion_poetica
-from chroma import abrir_o_reconstruir_chroma, buscar_en_chroma
+from chroma import abrir_chroma, buscar_en_chroma
 from generar_estructura_poetica import generar_estructura_poetica
 from calcular_pesos import calcular_pesos
 from brave_search import brave_search
@@ -190,11 +190,13 @@ def ejecutar_pipeline_poetico(params):
 
     chunks_obra = cargar_json(f"{base}/data/chunks/chunks_obra.json")
     chunks_influencias = cargar_json(f"{base}/data/chunks/chunks_influencias.json")
-    chunks_folklore = cargar_json(f"{base}/data/chunks/chunks_folklore.json")
+    chunks_folklore1 = cargar_json(f"{base}/data/chunks/chunks_folklore1.json")
+    chunks_folklore2 = cargar_json(f"{base}/data/chunks/chunks_folklore2.json")
     if loguear_etapa:
         loguear_etapa("Cargar chunks obra", f"Ruta: {base}/data/chunks/chunks_obra.json", str(chunks_obra))
         loguear_etapa("Cargar chunks influencias", f"Ruta: {base}/data/chunks/chunks_influencias.json", str(chunks_influencias))
-        loguear_etapa("Cargar chunks folklore", f"Ruta: {base}/data/chunks/chunks_folklore.json", str(chunks_folklore))
+        loguear_etapa("Cargar chunks folklore1", f"Ruta: {base}/data/chunks/chunks_folklore1.json", str(chunks_folklore1))
+        loguear_etapa("Cargar chunks folklore2", f"Ruta: {base}/data/chunks/chunks_folklore2.json", str(chunks_folklore2))
 
     prompt_maestro = cargar_prompt(f"{base}/prompts/prompt_maestro.txt")
     prompt_eval = cargar_prompt(f"{base}/prompts/prompt_evaluacion.txt")
@@ -257,16 +259,21 @@ def ejecutar_pipeline_poetico(params):
         loguear_etapa("Rigidez estructural", "Perfil", str(rigidez))
 
     # 6. CONSTRUIR CONTEXTO LARGO (GEMINI) — VERSIÓN SEGURA
-    chroma_obra = abrir_o_reconstruir_chroma(f"{base}/data/chroma/obra/", chunks_obra)
-    chroma_influencias = abrir_o_reconstruir_chroma(f"{base}/data/chroma/influencias/", chunks_influencias)
-    chroma_folklore = abrir_o_reconstruir_chroma(f"{base}/data/chroma/folklore/", chunks_folklore)
+    chroma_obra = abrir_chroma(f"{base}/data/chroma/obra/")
+    chroma_influencias = abrir_chroma(f"{base}/data/chroma/influencias/")
+    chroma_folklore1 = abrir_chroma(f"{base}/data/chroma/folklore1/")
+    chroma_folklore2 = abrir_chroma(f"{base}/data/chroma/folklore2/")
     fragmentos_obra = buscar_en_chroma(chroma_obra, params['tema'], k=30)
     fragmentos_influencias = buscar_en_chroma(chroma_influencias, params['tema'], k=30)
-    fragmentos_folklore = buscar_en_chroma(chroma_folklore, params['tema'], k=30)
+    fragmentos_folklore1 = buscar_en_chroma(chroma_folklore1, params['tema'], k=15)
+    fragmentos_folklore2 = buscar_en_chroma(chroma_folklore2, params['tema'], k=15)
+    fragmentos_folklore = fragmentos_folklore1 + fragmentos_folklore2
     if loguear_etapa:
         loguear_etapa("Buscar en Chroma obra", f"Tema: {params['tema']}", str(fragmentos_obra))
         loguear_etapa("Buscar en Chroma influencias", f"Tema: {params['tema']}", str(fragmentos_influencias))
-        loguear_etapa("Buscar en Chroma folklore", f"Tema: {params['tema']}", str(fragmentos_folklore))
+        loguear_etapa("Buscar en Chroma folklore1", f"Tema: {params['tema']}", str(fragmentos_folklore1))
+        loguear_etapa("Buscar en Chroma folklore2", f"Tema: {params['tema']}", str(fragmentos_folklore2))
+        loguear_etapa("Combinar folklore", f"Tema: {params['tema']}", str(fragmentos_folklore))
 
     texto_obra = "\n\n".join(fragmentos_obra)
     texto_influencias = "\n\n".join(fragmentos_influencias)

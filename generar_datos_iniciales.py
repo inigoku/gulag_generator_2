@@ -71,6 +71,10 @@ def trocear_texto(texto, tamaño=400):
         chunks.append(fragmento)
     return chunks
 
+def dividir_en_dos(chunks):
+    mitad = len(chunks) // 2
+    return chunks[:mitad], chunks[mitad:]
+
 def guardar_json(data, ruta):
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     with open(ruta, 'w', encoding='utf-8') as f:
@@ -108,6 +112,13 @@ def deepseek_analizar_estilo(fragmentos):
     prompt = f"{instrucciones}\n\n{contexto}"
     return _llamar_deepseek(prompt)
 
+def mezclar_dos_perfiles(perfil1, perfil2):
+    prompt = (
+        "Mezcla estos dos perfiles al 50% y devuelve un único perfil estilístico coherente.\n\n"
+        f"[P1]\n{perfil1}\n\n[P2]\n{perfil2}"
+    )
+    return _llamar_deepseek(prompt)
+
 def mezclar_perfiles(perfil1, perfil2, perfil3, alpha, beta, gamma):
     prompt = f"Mezcla estos perfiles con pesos: P1({alpha}), P2({beta}), P3({gamma}).\n\n[P1]\n{perfil1}\n\n[P2]\n{perfil2}\n\n[P3]\n{perfil3}"
     return _llamar_deepseek(prompt)
@@ -130,10 +141,12 @@ def generar_datos_iniciales():
         "corpus_folklore": "./data/corpus/folklore.txt",
         "chunks_obra": "./data/chunks/chunks_obra.json",
         "chunks_influencias": "./data/chunks/chunks_influencias.json",
-        "chunks_folklore": "./data/chunks/chunks_folklore.json",
+        "chunks_folklore1": "./data/chunks/chunks_folklore1.json",
+        "chunks_folklore2": "./data/chunks/chunks_folklore2.json",
         "chroma_obra": "./data/chroma/obra/",
         "chroma_influencias": "./data/chroma/influencias/",
-        "chroma_folklore": "./data/chroma/folklore/"
+        "chroma_folklore1": "./data/chroma/folklore1/",
+        "chroma_folklore2": "./data/chroma/folklore2/"
     }
 
     # Crear directorios necesarios si no existen
@@ -177,10 +190,12 @@ def generar_datos_iniciales():
     chunks_obra = trocear_texto(texto_obra, tamaño=400)
     chunks_influencias = trocear_texto(texto_influencias, tamaño=400)
     chunks_folklore = trocear_texto(texto_folklore, tamaño=400)
+    chunks_folklore1, chunks_folklore2 = dividir_en_dos(chunks_folklore)
 
     guardar_json(chunks_obra, rutas["chunks_obra"])
     guardar_json(chunks_influencias, rutas["chunks_influencias"])
-    guardar_json(chunks_folklore, rutas["chunks_folklore"])
+    guardar_json(chunks_folklore1, rutas["chunks_folklore1"])
+    guardar_json(chunks_folklore2, rutas["chunks_folklore2"])
 
 
 
@@ -190,15 +205,18 @@ def generar_datos_iniciales():
 
     chroma_obra = crear_chroma(rutas["chroma_obra"])
     chroma_influencias = crear_chroma(rutas["chroma_influencias"])
-    chroma_folklore = crear_chroma(rutas["chroma_folklore"])
+    chroma_folklore1 = crear_chroma(rutas["chroma_folklore1"])
+    chroma_folklore2 = crear_chroma(rutas["chroma_folklore2"])
 
     embeddings_obra = generar_embeddings(chunks_obra)
     embeddings_influencias = generar_embeddings(chunks_influencias)
-    embeddings_folklore = generar_embeddings(chunks_folklore)
+    embeddings_folklore1 = generar_embeddings(chunks_folklore1)
+    embeddings_folklore2 = generar_embeddings(chunks_folklore2)
 
     insertar_en_chroma(chroma_obra, chunks_obra, embeddings_obra)
     insertar_en_chroma(chroma_influencias, chunks_influencias, embeddings_influencias)
-    insertar_en_chroma(chroma_folklore, chunks_folklore, embeddings_folklore)
+    insertar_en_chroma(chroma_folklore1, chunks_folklore1, embeddings_folklore1)
+    insertar_en_chroma(chroma_folklore2, chunks_folklore2, embeddings_folklore2)
 
 
 
@@ -210,7 +228,9 @@ def generar_datos_iniciales():
 
     contexto_obra = buscar_en_chroma(chroma_obra, tema, k=30)
     contexto_influencias = buscar_en_chroma(chroma_influencias, tema, k=30)
-    contexto_folklore = buscar_en_chroma(chroma_folklore, tema, k=30)
+    contexto_folklore1 = buscar_en_chroma(chroma_folklore1, tema, k=15)
+    contexto_folklore2 = buscar_en_chroma(chroma_folklore2, tema, k=15)
+    contexto_folklore = contexto_folklore1 + contexto_folklore2
 
 
 
@@ -221,10 +241,14 @@ def generar_datos_iniciales():
     # 5bis.1 análisis de estilo de cada corpus
     perfil_obra = deepseek_analizar_estilo(contexto_obra)
     perfil_influencias = deepseek_analizar_estilo(contexto_influencias)
-    perfil_folklore = deepseek_analizar_estilo(contexto_folklore)
+    perfil_folklore1 = deepseek_analizar_estilo(contexto_folklore1)
+    perfil_folklore2 = deepseek_analizar_estilo(contexto_folklore2)
+    perfil_folklore = mezclar_dos_perfiles(perfil_folklore1, perfil_folklore2)
 
     guardar_texto(perfil_obra, "./estilo/perfil_obra.md")
     guardar_texto(perfil_influencias, "./estilo/perfil_influencias.md")
+    guardar_texto(perfil_folklore1, "./estilo/perfil_folklore1.md")
+    guardar_texto(perfil_folklore2, "./estilo/perfil_folklore2.md")
     guardar_texto(perfil_folklore, "./estilo/perfil_folklore.md")
 
     # 5bis.2 mezcla ponderada
