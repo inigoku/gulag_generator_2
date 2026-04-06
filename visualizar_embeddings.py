@@ -49,11 +49,13 @@ def main():
     base_path = "." # Asume que se ejecuta desde generador_v2/
     path_obra = os.path.join(base_path, "data/chroma/obra")
     path_influencias = os.path.join(base_path, "data/chroma/influencias")
+    path_folklore = os.path.join(base_path, "data/chroma/folklore")
 
     # Diagnosticar rutas
     print(f"📍 Buscando datos en: {os.path.abspath(base_path)}")
     print(f"   - Obra: {os.path.abspath(path_obra)} {'✓' if os.path.exists(path_obra) else '✗ NO EXISTE'}")
     print(f"   - Influencias: {os.path.abspath(path_influencias)} {'✓' if os.path.exists(path_influencias) else '✗ NO EXISTE'}")
+    print(f"   - Folklore: {os.path.abspath(path_folklore)} {'✓' if os.path.exists(path_folklore) else '✗ NO EXISTE'}")
     print()
 
     # Cargar embeddings
@@ -67,7 +69,12 @@ def main():
     if embeddings_influencias is not None:
         print(f"  ✓ {len(embeddings_influencias)} embeddings cargados")
 
-    if embeddings_obra is None and embeddings_influencias is None:
+    print("Cargando embeddings de 'folklore'...")
+    embeddings_folklore, hover_folklore = cargar_embeddings_de_coleccion(path_folklore)
+    if embeddings_folklore is not None:
+        print(f"  ✓ {len(embeddings_folklore)} embeddings cargados")
+
+    if embeddings_obra is None and embeddings_influencias is None and embeddings_folklore is None:
         print("No se pudieron cargar embeddings de ninguna colección. Saliendo.")
         return
 
@@ -85,6 +92,11 @@ def main():
         all_embeddings.append(embeddings_influencias)
         labels.extend(['Influencias'] * len(embeddings_influencias))
         hover_texts.extend(hover_influencias)
+
+    if embeddings_folklore is not None:
+        all_embeddings.append(embeddings_folklore)
+        labels.extend(['Folklore'] * len(embeddings_folklore))
+        hover_texts.extend(hover_folklore)
 
     all_embeddings = np.vstack(all_embeddings)
 
@@ -105,19 +117,23 @@ def main():
         pca = PCA(n_components=3)
         embeddings_3d = pca.fit_transform(all_embeddings)
 
+    # Definir colores según etiqueta
+    color_map = {'Obra': 0, 'Influencias': 0.5, 'Folklore': 1}
+    colors = [color_map[label] for label in labels]
+
     # Crear la figura 3D con Plotly
     fig = go.Figure(data=[go.Scatter3d(
         x=embeddings_3d[:, 0],
         y=embeddings_3d[:, 1],
         z=embeddings_3d[:, 2],
         mode='markers',
-        marker=dict(size=5, color=[0 if label == 'Obra' else 1 for label in labels], colorscale='Viridis', opacity=0.8),
+        marker=dict(size=5, color=colors, colorscale='Viridis', opacity=0.8),
         text=hover_texts,
         customdata=labels,
         hovertemplate='<b>%{customdata}</b><br><br>%{text}<extra></extra>'
     )])
 
-    fig.update_layout(title=f'Visualización 3D de Embeddings ({args.metodo.upper()} - Obra vs. Influencias)',
+    fig.update_layout(title=f'Visualización 3D de Embeddings ({args.metodo.upper()} - Obra vs. Influencias vs. Folklore)',
                       scene=dict(xaxis_title='Dim 1', yaxis_title='Dim 2', zaxis_title='Dim 3'),
                       margin=dict(r=20, b=10, l=10, t=40))
 

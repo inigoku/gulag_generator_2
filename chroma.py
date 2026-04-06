@@ -21,11 +21,13 @@ def generar_embeddings(chunks):
 
 def insertar_en_chroma(collection, chunks, embeddings):
     ids = [str(i) for i in range(len(chunks))]
-    collection.add(
-        documents=chunks,
-        embeddings=embeddings,
-        ids=ids
-    )
+    batch_size = 5000
+    for i in range(0, len(chunks), batch_size):
+        collection.add(
+            documents=chunks[i:i+batch_size],
+            embeddings=embeddings[i:i+batch_size],
+            ids=ids[i:i+batch_size]
+        )
 
 def buscar_en_chroma(collection, query, k=30):
     resultados = collection.query(

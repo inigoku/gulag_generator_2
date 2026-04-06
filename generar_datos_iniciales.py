@@ -21,7 +21,7 @@ def cargar_configuracion(env_path, modelos_path, pesos_path):
     if os.path.exists(env_path):
         load_dotenv(env_path)
     
-    config = {"pesos_estilo": {"obra": 0.5, "influencias": 0.5}}
+    config = {"pesos_estilo": {"obra": 0.5, "influencias": 0.3, "folklore": 0.2}}
     
     if os.path.exists(modelos_path):
         with open(modelos_path, 'r', encoding='utf-8') as f:
@@ -108,8 +108,8 @@ def deepseek_analizar_estilo(fragmentos):
     prompt = f"{instrucciones}\n\n{contexto}"
     return _llamar_deepseek(prompt)
 
-def mezclar_perfiles(perfil1, perfil2, alpha, beta):
-    prompt = f"Mezcla estos perfiles con pesos: P1({alpha}), P2({beta}).\n\n[P1]\n{perfil1}\n\n[P2]\n{perfil2}"
+def mezclar_perfiles(perfil1, perfil2, perfil3, alpha, beta, gamma):
+    prompt = f"Mezcla estos perfiles con pesos: P1({alpha}), P2({beta}), P3({gamma}).\n\n[P1]\n{perfil1}\n\n[P2]\n{perfil2}\n\n[P3]\n{perfil3}"
     return _llamar_deepseek(prompt)
 
 def generar_datos_iniciales():
@@ -127,10 +127,13 @@ def generar_datos_iniciales():
         "pdfs_influencias": "./data/pdfs/influencias/",
         "corpus_obra": "./data/corpus/obra.txt",
         "corpus_influencias": "./data/corpus/influencias.txt",
+        "corpus_folklore": "./data/corpus/folklore.txt",
         "chunks_obra": "./data/chunks/chunks_obra.json",
         "chunks_influencias": "./data/chunks/chunks_influencias.json",
+        "chunks_folklore": "./data/chunks/chunks_folklore.json",
         "chroma_obra": "./data/chroma/obra/",
-        "chroma_influencias": "./data/chroma/influencias/"
+        "chroma_influencias": "./data/chroma/influencias/",
+        "chroma_folklore": "./data/chroma/folklore/"
     }
 
     # Crear directorios necesarios si no existen
@@ -143,17 +146,27 @@ def generar_datos_iniciales():
 
 
     ###############################################
-    # 2. CARGA DE CORPUS (PDF → TEXTO)
+    # 2. CARGA DE CORPUS
     ###############################################
 
     texto_obra = extraer_texto_de_pdfs(rutas["pdfs_obra"])
     texto_influencias = extraer_texto_de_pdfs(rutas["pdfs_influencias"])
 
+    # El corpus de folklore ya fue descargado a texto directamente
+    if os.path.exists(rutas["corpus_folklore"]):
+        with open(rutas["corpus_folklore"], 'r', encoding='utf-8') as f:
+            texto_folklore = f.read()
+    else:
+        texto_folklore = ""
+        print("⚠️ No se encontró el corpus de folklore.")
+
     texto_obra = limpiar_y_normalizar(texto_obra)
     texto_influencias = limpiar_y_normalizar(texto_influencias)
+    texto_folklore = limpiar_y_normalizar(texto_folklore)
 
     guardar_texto(texto_obra, rutas["corpus_obra"])
     guardar_texto(texto_influencias, rutas["corpus_influencias"])
+    guardar_texto(texto_folklore, rutas["corpus_folklore"])
 
 
 
@@ -163,35 +176,41 @@ def generar_datos_iniciales():
 
     chunks_obra = trocear_texto(texto_obra, tamaño=400)
     chunks_influencias = trocear_texto(texto_influencias, tamaño=400)
+    chunks_folklore = trocear_texto(texto_folklore, tamaño=400)
 
     guardar_json(chunks_obra, rutas["chunks_obra"])
     guardar_json(chunks_influencias, rutas["chunks_influencias"])
+    guardar_json(chunks_folklore, rutas["chunks_folklore"])
 
 
 
     ###############################################
-    # 4. EMBEDDINGS + CHROMADB (DOBLE MEMORIA)
+    # 4. EMBEDDINGS + CHROMADB
     ###############################################
 
     chroma_obra = crear_chroma(rutas["chroma_obra"])
     chroma_influencias = crear_chroma(rutas["chroma_influencias"])
+    chroma_folklore = crear_chroma(rutas["chroma_folklore"])
 
     embeddings_obra = generar_embeddings(chunks_obra)
     embeddings_influencias = generar_embeddings(chunks_influencias)
+    embeddings_folklore = generar_embeddings(chunks_folklore)
 
     insertar_en_chroma(chroma_obra, chunks_obra, embeddings_obra)
     insertar_en_chroma(chroma_influencias, chunks_influencias, embeddings_influencias)
+    insertar_en_chroma(chroma_folklore, chunks_folklore, embeddings_folklore)
 
 
 
     ###############################################
-    # 5. RECUPERACIÓN (RAG DUAL)
+    # 5. RECUPERACIÓN
     ###############################################
 
     tema = "análisis de estilo"   # tema neutro para extraer patrones
 
     contexto_obra = buscar_en_chroma(chroma_obra, tema, k=30)
     contexto_influencias = buscar_en_chroma(chroma_influencias, tema, k=30)
+    contexto_folklore = buscar_en_chroma(chroma_folklore, tema, k=30)
 
 
 
@@ -202,18 +221,22 @@ def generar_datos_iniciales():
     # 5bis.1 análisis de estilo de cada corpus
     perfil_obra = deepseek_analizar_estilo(contexto_obra)
     perfil_influencias = deepseek_analizar_estilo(contexto_influencias)
+    perfil_folklore = deepseek_analizar_estilo(contexto_folklore)
 
     guardar_texto(perfil_obra, "./estilo/perfil_obra.md")
     guardar_texto(perfil_influencias, "./estilo/perfil_influencias.md")
+    guardar_texto(perfil_folklore, "./estilo/perfil_folklore.md")
 
     # 5bis.2 mezcla ponderada
-    α = config["pesos_estilo"]["obra"]
-    β = config["pesos_estilo"]["influencias"]
+    pesos = config.get("pesos_estilo", {})
+    α = pesos.get("obra", 0.5)
+    β = pesos.get("influencias", 0.3)
+    γ = pesos.get("folklore", 0.2)
 
-    perfil_estilistico_final = mezclar_perfiles(perfil_obra, perfil_influencias, α, β)
+    perfil_estilistico_final = mezclar_perfiles(perfil_obra, perfil_influencias, perfil_folklore, α, β, γ)
 
     guardar_texto(perfil_estilistico_final, "./estilo/perfil_estilistico_final.md")
-    guardar_json({"alpha": α, "beta": β}, "./estilo/mezcla_estilo.json")
+    guardar_json({"alpha": α, "beta": β, "gamma": γ}, "./estilo/mezcla_estilo.json")
 
 
 
@@ -224,7 +247,8 @@ def generar_datos_iniciales():
     return {
         "perfil_estilistico": perfil_estilistico_final,
         "contexto_obra": contexto_obra,
-        "contexto_influencias": contexto_influencias
+        "contexto_influencias": contexto_influencias,
+        "contexto_folklore": contexto_folklore
     }
 
 if __name__ == "__main__":

@@ -83,7 +83,19 @@ No cites literalmente los fragmentos. NUNCA.
 
 ---
 
-## 8. INSTRUCCIONES GENERALES
+## 8. CONTEXTO DE FOLKLORE
+Usa este contexto para dotar al poema de un aire atemporal, mítico o universal:
+
+{folklore}
+
+No imites.  
+No copies.
+
+No cites literalmente los fragmentos. NUNCA.
+
+---
+
+## 9. INSTRUCCIONES GENERALES
 - Mantén coherencia con el estilo del autor.
 - Mantén la progresión emocional sugerida.
 - Usa la estructura como guía, no como obligación.
@@ -96,5 +108,5 @@ No cites literalmente los fragmentos. NUNCA.
 
 ---
 
-## 9. TAREA FINAL
+## 10. TAREA FINAL
 Escribe el poema siguiendo TODAS las instrucciones anteriores.

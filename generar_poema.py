@@ -190,9 +190,11 @@ def ejecutar_pipeline_poetico(params):
 
     chunks_obra = cargar_json(f"{base}/data/chunks/chunks_obra.json")
     chunks_influencias = cargar_json(f"{base}/data/chunks/chunks_influencias.json")
+    chunks_folklore = cargar_json(f"{base}/data/chunks/chunks_folklore.json")
     if loguear_etapa:
         loguear_etapa("Cargar chunks obra", f"Ruta: {base}/data/chunks/chunks_obra.json", str(chunks_obra))
         loguear_etapa("Cargar chunks influencias", f"Ruta: {base}/data/chunks/chunks_influencias.json", str(chunks_influencias))
+        loguear_etapa("Cargar chunks folklore", f"Ruta: {base}/data/chunks/chunks_folklore.json", str(chunks_folklore))
 
     prompt_maestro = cargar_prompt(f"{base}/prompts/prompt_maestro.txt")
     prompt_eval = cargar_prompt(f"{base}/prompts/prompt_evaluacion.txt")
@@ -257,20 +259,25 @@ def ejecutar_pipeline_poetico(params):
     # 6. CONSTRUIR CONTEXTO LARGO (GEMINI) — VERSIÓN SEGURA
     chroma_obra = abrir_chroma(f"{base}/data/chroma/obra/")
     chroma_influencias = abrir_chroma(f"{base}/data/chroma/influencias/")
+    chroma_folklore = abrir_chroma(f"{base}/data/chroma/folklore/")
     fragmentos_obra = buscar_en_chroma(chroma_obra, params['tema'], k=30)
     fragmentos_influencias = buscar_en_chroma(chroma_influencias, params['tema'], k=30)
+    fragmentos_folklore = buscar_en_chroma(chroma_folklore, params['tema'], k=30)
     if loguear_etapa:
         loguear_etapa("Buscar en Chroma obra", f"Tema: {params['tema']}", str(fragmentos_obra))
         loguear_etapa("Buscar en Chroma influencias", f"Tema: {params['tema']}", str(fragmentos_influencias))
+        loguear_etapa("Buscar en Chroma folklore", f"Tema: {params['tema']}", str(fragmentos_folklore))
 
     texto_obra = "\n\n".join(fragmentos_obra)
     texto_influencias = "\n\n".join(fragmentos_influencias)
+    texto_folklore = "\n\n".join(fragmentos_folklore)
 
     instrucciones_formateadas = prompt_maestro.format(
         estilo=perfil_estilistico,
         estructura=EstructuraFlexible(estructura),
         mezcla=texto_obra,
         influencias=texto_influencias,
+        folklore=texto_folklore,
         tema=params.get("tema", ""),
         tono_extra=params.get("tono_extra", ""),
         restricciones=params.get("restricciones", ""),
@@ -296,6 +303,9 @@ def ejecutar_pipeline_poetico(params):
 
     CONTEXTO_INFLUENCIAS:
     {texto_influencias}
+
+    CONTEXTO_FOLKLORE:
+    {texto_folklore}
 
     CONTEXTO_FACTUAL (solo si γ > 0.15):
     {contexto_factual}
