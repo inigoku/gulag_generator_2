@@ -1,2 +1,19 @@
 .env
 __pycache__/
+
+# Bases de datos Chroma y vectores (archivos generados, pueden ser grandes)
+data/chroma/
+data/corpus/
+data/pdfs/
+
+# Guardados binarios (audio, imagen)
+guardados/**/*.mp3
+guardados/**/*.bin
+guardados/**/*.png
+guardados/**/*.wav
+
+# macOS
+.DS_Store
+
+# Logs
+logs/

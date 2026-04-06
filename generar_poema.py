@@ -3,7 +3,7 @@
 import json
 
 from clasificar_intencion_poetica import clasificar_intencion_poetica
-from chroma import abrir_chroma, buscar_en_chroma
+from chroma import abrir_o_reconstruir_chroma, buscar_en_chroma
 from generar_estructura_poetica import generar_estructura_poetica
 from calcular_pesos import calcular_pesos
 from brave_search import brave_search
@@ -257,9 +257,9 @@ def ejecutar_pipeline_poetico(params):
         loguear_etapa("Rigidez estructural", "Perfil", str(rigidez))
 
     # 6. CONSTRUIR CONTEXTO LARGO (GEMINI) — VERSIÓN SEGURA
-    chroma_obra = abrir_chroma(f"{base}/data/chroma/obra/")
-    chroma_influencias = abrir_chroma(f"{base}/data/chroma/influencias/")
-    chroma_folklore = abrir_chroma(f"{base}/data/chroma/folklore/")
+    chroma_obra = abrir_o_reconstruir_chroma(f"{base}/data/chroma/obra/", chunks_obra)
+    chroma_influencias = abrir_o_reconstruir_chroma(f"{base}/data/chroma/influencias/", chunks_influencias)
+    chroma_folklore = abrir_o_reconstruir_chroma(f"{base}/data/chroma/folklore/", chunks_folklore)
     fragmentos_obra = buscar_en_chroma(chroma_obra, params['tema'], k=30)
     fragmentos_influencias = buscar_en_chroma(chroma_influencias, params['tema'], k=30)
     fragmentos_folklore = buscar_en_chroma(chroma_folklore, params['tema'], k=30)

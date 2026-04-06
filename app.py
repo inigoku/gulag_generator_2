@@ -14,8 +14,10 @@ st.set_page_config(page_title="Generador de Poesía V2", page_icon="✒️", lay
 # Aseguramos que se pueda importar desde el directorio actual
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from chroma import abrir_o_reconstruir_chroma
 from generar_poema import ejecutar_pipeline_poetico, ejecutar_rework_poetico
 from utils_llamadas import (
+    cargar_json,
     generate_from_poem,
     generar_audio_poema_con_suno,
     generar_estilo_musical_desde_contexto,
@@ -23,6 +25,23 @@ from utils_llamadas import (
 
 BASE_DIR = Path(__file__).resolve().parent
 GUARDADOS_DIR = BASE_DIR / "guardados"
+
+
+@st.cache_resource(show_spinner=False)
+def _asegurar_contexto_vectorial():
+    datasets = {
+        "obra": BASE_DIR / "data/chunks/chunks_obra.json",
+        "influencias": BASE_DIR / "data/chunks/chunks_influencias.json",
+        "folklore": BASE_DIR / "data/chunks/chunks_folklore.json",
+    }
+
+    for nombre, ruta_chunks in datasets.items():
+        chunks = cargar_json(str(ruta_chunks))
+        if not chunks:
+            raise FileNotFoundError(f"Faltan los chunks de {nombre}: {ruta_chunks}")
+        abrir_o_reconstruir_chroma(str(BASE_DIR / f"data/chroma/{nombre}"), chunks)
+
+    return True
 
 
 def _slug(texto):
@@ -158,6 +177,9 @@ def _recuperar_bundle(bundle_id):
     return recuperado, metadata
 
 def main():
+    with st.spinner("Preparando índices vectoriales del proyecto..."):
+        _asegurar_contexto_vectorial()
+
     if "consulta_audio_status" not in st.session_state:
         st.session_state.consulta_audio_status = ""
     if "consulta_audio_url" not in st.session_state:

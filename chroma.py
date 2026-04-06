@@ -14,6 +14,28 @@ def abrir_chroma(ruta):
     nombre_coleccion = os.path.basename(os.path.normpath(ruta))
     return client.get_collection(name=nombre_coleccion)
 
+def abrir_o_reconstruir_chroma(ruta, chunks):
+    os.makedirs(ruta, exist_ok=True)
+    client = chromadb.PersistentClient(path=ruta)
+    nombre_coleccion = os.path.basename(os.path.normpath(ruta))
+
+    try:
+        collection = client.get_collection(name=nombre_coleccion)
+        if collection.count() == len(chunks):
+            return collection
+
+        client.delete_collection(name=nombre_coleccion)
+    except Exception:
+        pass
+
+    collection = client.get_or_create_collection(name=nombre_coleccion)
+    if not chunks:
+        return collection
+
+    embeddings = generar_embeddings(chunks)
+    insertar_en_chroma(collection, chunks, embeddings)
+    return collection
+
 def generar_embeddings(chunks):
     # Usamos el modelo por defecto de Chroma (all-MiniLM-L6-v2)
     ef = embedding_functions.DefaultEmbeddingFunction()
