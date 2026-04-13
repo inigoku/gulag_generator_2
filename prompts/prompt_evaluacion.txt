@@ -43,6 +43,7 @@ Devuelve un JSON con esta estructura:
 }
 
 Evalúa:
+- Fidelidad a los principios
 - Coherencia temática
 - Fidelidad al PERFIL_ESTILISTICO
 - Calidad de la rima (si aplica)
