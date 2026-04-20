@@ -10,9 +10,13 @@ def crear_chroma(ruta):
 
 def abrir_chroma(ruta):
     os.makedirs(ruta, exist_ok=True)
-    client = chromadb.PersistentClient(path=ruta)
-    nombre_coleccion = os.path.basename(os.path.normpath(ruta))
-    return client.get_collection(name=nombre_coleccion)
+    try:
+        client = chromadb.PersistentClient(path=ruta)
+        nombre_coleccion = os.path.basename(os.path.normpath(ruta))
+        return client.get_collection(name=nombre_coleccion)
+    except Exception as e:
+        print(f"Advertencia: No se pudo abrir la base de datos Chroma en {ruta}: {e}")
+        return None
 
 def generar_embeddings(chunks):
     # Usamos el modelo por defecto de Chroma (all-MiniLM-L6-v2)
@@ -30,6 +34,8 @@ def insertar_en_chroma(collection, chunks, embeddings):
         )
 
 def buscar_en_chroma(collection, query, k=30):
+    if collection is None:
+        return []
     resultados = collection.query(
         query_texts=[query],
         n_results=k

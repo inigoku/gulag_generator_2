@@ -31,6 +31,7 @@ Corta de raíz cualquier verso que suene a relleno. Si una estrofa funciona con 
 Devuelve un JSON con esta estructura:
 
 {
+  "puntuacion": [número del 0 al 10 con decimales, donde 10 es perfecto],
   "ok": true/false,
   "problemas": [
       "descripción del problema 1",
@@ -41,6 +42,8 @@ Devuelve un JSON con esta estructura:
       "sugerencia 2"
   ]
 }
+
+IMPORTANTE: Sé extremadamente exigente. Solo otorga una puntuación superior a 9.5 si el poema es excepcional, impecable y no tiene ni un solo problema estilístico, métrico o conceptual. Si le das 9.5 o menos, especifica claramente los problemas para que pueda ser reescrito.
 
 Evalúa:
 - Fidelidad a los principios

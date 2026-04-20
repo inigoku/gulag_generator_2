@@ -4712,7 +4712,7 @@ No es un entrenamiento real, pero funciona sorprendentemente bien para poesía.
 ---
 
 # 🌟 3. **Gemini + “Context Window” gigante**  
-Gemini 1.5 Pro tiene una ventana de contexto enorme (hasta millones de tokens).  
+Gemini 2.0 Pro tiene una ventana de contexto enorme (hasta millones de tokens).  
 Eso significa que puedes:
 
 - cargar capítulos enteros  
@@ -16777,7 +16777,12 @@ Así puedes ver **qué modelo usar para imágenes** (normalmente `imagen-3.0` o 
 - o integrarlo directamente en tu pipeline para que el agente elija el modelo automáticamente  
 
 Dime qué prefieres y te lo preparo.";;;
-Creación de Poemas con Estilo de Autor;2026-02-10T16:35:47;Human;"(base) PS C:\GIT\gulag_generator_2> python3 .\get_models.pyTraceback (most recent call last):  File ""/c/GIT/gulag_generator_2/.\get_models.py"", line 1, in <module>    from google import genaiModuleNotFoundError: No module named 'google'(base) PS C:\GIT\gulag_generator_2>";;;
+Creación de Poemas con Estilo de Autor;2026-02-10T16:35:47;Human;"(base) PS C:\GIT\gulag_generator_2> python3 .\get_models.py
+Traceback (most recent call last):
+  File ""/c/GIT/gulag_generator_2/.\get_models.py"", line 1, in <module>
+    from google import genai
+ModuleNotFoundError: No module named 'google'
+(base) PS C:\GIT\gulag_generator_2>";;;
 Creación de Poemas con Estilo de Autor;2026-02-10T16:35:47;AI;"Puedo ayudarte con esto, Íñigo — y la buena noticia es que el error **no tiene nada que ver con tu script**, sino con tu entorno de Python.
 
 El mensaje:
@@ -16892,7 +16897,9 @@ Si quieres, también puedo ayudarte a:
 - detectar automáticamente el mejor modelo para tu pipeline  
 
 ¿Quieres que te genere esos scripts también?";;;
-Creación de Poemas con Estilo de Autor;2026-02-10T17:03:25;Human;"ClientError: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'sampleImageSize of model models/imagen-4.0-generate-001 must be 1K or 2K.', 'status':'INVALID_ARGUMENT'}}";;;
+Creación de Poemas con Estilo de Autor;2026-02-10T17:03:25;Human;"ClientError: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'sampleImageSize 
+of model models/imagen-4.0-generate-001 must be 1K or 2K.', 'status':
+'INVALID_ARGUMENT'}}";;;
 Creación de Poemas con Estilo de Autor;2026-02-10T17:03:25;AI;"Ese error que te está dando:
 
 ```
@@ -16969,7 +16976,11 @@ Usan **sampleImageSize** con valores simbólicos:
 - un wrapper que elige el mejor modelo según el poema  
 
 Solo dime qué prefieres.";;;
-Creación de Poemas con Estilo de Autor;2026-02-10T17:05:09;Human;"ValidationError: 1 validation error for GenerateImagesConfigsampleImageSize  Extra inputs are not permitted [type=extra_forbidden, input_value='1K',input_type=str]    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden";;;
+Creación de Poemas con Estilo de Autor;2026-02-10T17:05:09;Human;"ValidationError: 1 validation error for GenerateImagesConfig
+sampleImageSize
+  Extra inputs are not permitted [type=extra_forbidden, input_value='1K',
+input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden";;;
 Creación de Poemas con Estilo de Autor;2026-02-10T17:05:09;AI;"Vale, Íñigo — este error ya me da la pista exacta de lo que está pasando:
 
 ```

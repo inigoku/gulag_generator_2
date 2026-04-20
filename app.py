@@ -23,6 +23,7 @@ from utils_llamadas import (
 
 BASE_DIR = Path(__file__).resolve().parent
 GUARDADOS_DIR = BASE_DIR / "guardados"
+NUM_EXTENDIDOS_DEFAULT = 10
 
 
 def _slug(texto):
@@ -87,6 +88,8 @@ def _guardar_bundle(resultado, params, nombre):
         "audio_task_id": (resultado or {}).get("audio_task_id", ""),
         "audio_estilo": (resultado or {}).get("audio_estilo", ""),
         "audio_error": (resultado or {}).get("audio_error"),
+        "modelos_probados": (resultado or {}).get("modelos_probados", []),
+        "groq_payload_ajustes": (resultado or {}).get("groq_payload_ajustes", []),
     }
 
     metadata = {
@@ -153,6 +156,8 @@ def _recuperar_bundle(bundle_id):
         "audio_task_id": snapshot.get("audio_task_id", metadata.get("audio_task_id")),
         "audio_estilo": snapshot.get("audio_estilo", ""),
         "audio_error": snapshot.get("audio_error"),
+        "modelos_probados": snapshot.get("modelos_probados", metadata.get("modelos_probados", [])),
+        "groq_payload_ajustes": snapshot.get("groq_payload_ajustes", metadata.get("groq_payload_ajustes", [])),
     }
 
     return recuperado, metadata
@@ -178,24 +183,14 @@ def main():
         st.session_state.aviso_guardado_legacy = ""
 
     st.title("Generador de Poesía V2: Sindar")
-    st.markdown("UI organizada en dos partes: izquierda para configuración/guardado y derecha para poema, música e imagen.")
+    st.markdown(
+        "UI organizada en dos partes: izquierda para configuración/guardado y derecha para poema, música e imagen. "
+        f"La generación usa {NUM_EXTENDIDOS_DEFAULT} contextos extendidos por defecto."
+    )
 
     col_left, col_right = st.columns([1, 2], gap="large")
 
     with col_left:
-        st.subheader("Modelos de IA")
-        groq_model = st.selectbox(
-            "Modelo Groq (Crítica/Reescritura)",
-            ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
-            index=0
-        )
-        google_model = st.selectbox(
-            "Modelo Google (Generación/Pulido)",
-            ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-pro", "gemini-2.0-flash"],
-            index=0
-        )
-
-        st.markdown("---")
         st.subheader("Guardar y recuperar")
         resultado_actual = st.session_state.ultimo_resultado
         nombre_guardado = st.text_input("Nombre del guardado", value="poema", key="nombre_guardado")
@@ -257,6 +252,15 @@ def main():
             tema = st.text_input("Tema", value="La emoción del básquet")
             tono_extra = st.text_input("Tono Extra", value="Épico y apasionado")
 
+        num_extendidos = st.slider(
+            "Número de contextos extendidos",
+            min_value=1,
+            max_value=10,
+            value=NUM_EXTENDIDOS_DEFAULT,
+            step=1,
+            help="Cuántas bases extendidas se consultan en la recuperación de contexto.",
+        )
+
         restricciones = st.text_area(
             "Restricciones",
             value="Sin rima consonante forzada, sin referencias tecnológicas"
@@ -272,8 +276,7 @@ def main():
                     "tono_extra": tono_extra,
                     "restricciones": restricciones,
                     "extension": extension,
-                    "groq_model": groq_model,
-                    "google_model": google_model,
+                    "num_extendidos": num_extendidos,
                     "crear_imagen": False,
                     "crear_audio": False,
                 }
@@ -292,6 +295,43 @@ def main():
         resultado_actual = st.session_state.ultimo_resultado
         if resultado_actual.get("poema_final"):
             st.text_area("Resultado del poema", value=resultado_actual.get("poema_final", ""), height=320)
+
+            with st.expander("📊 Resumen de Generación", expanded=False):
+                modelos = resultado_actual.get("modelos_usados", {})
+                if modelos:
+                    st.markdown("**Modelos Usados:**")
+                    for fase, mod in modelos.items():
+                        st.write(f"- {fase.replace('_', ' ').title()}: `{mod}`")
+
+                modelos_probados = resultado_actual.get("modelos_probados") or []
+                if modelos_probados:
+                    st.markdown("**Modelos probados y errores:**")
+                    st.dataframe(modelos_probados, use_container_width=True)
+                
+                iteraciones = resultado_actual.get("iteraciones_reescritura")
+                if iteraciones is not None:
+                    st.write(f"**Iteraciones de reescritura:** {iteraciones}")
+                
+                pesos = resultado_actual.get("pesos")
+                if pesos:
+                    st.markdown("**Pesos calculados:**")
+                    st.json(pesos)
+
+                params_usados = st.session_state.ultimo_params or {}
+                if params_usados:
+                    st.markdown("**Parámetros usados:**")
+                    st.json(params_usados)
+                
+                perfil = resultado_actual.get("perfil")
+                if perfil:
+                    st.markdown("**Perfil detectado:**")
+                    st.json(perfil)
+
+                groq_ajustes = resultado_actual.get("groq_payload_ajustes") or []
+                if groq_ajustes:
+                    st.markdown("**Ajustes de payload en fallback a Groq:**")
+                    st.caption("Se recortó el contenido antes de enviarlo a Groq para evitar errores 413.")
+                    st.json(groq_ajustes)
 
             comentario_rework = st.text_area(
                 "Comentario para afinar",
@@ -315,8 +355,6 @@ def main():
                             "comentario_rework": comentario_rework,
                             "tema": params_ultimo.get("tema", ""),
                             "tono_extra": params_ultimo.get("tono_extra", ""),
-                            "groq_model": groq_model,
-                            "google_model": google_model,
                             "contexto_extendido": contexto_para_pulido,
                         }
                         refinado = ejecutar_rework_poetico(params_rework)
@@ -387,7 +425,6 @@ def main():
                             poema_texto=resultado_actual.get("poema_final", ""),
                             tema=params_ultimo.get("tema", ""),
                             tono_extra=params_ultimo.get("tono_extra", ""),
-                            model=google_model,
                         )
                     st.success("Estilo musical listo.")
                 except Exception as e:
@@ -421,7 +458,6 @@ def main():
                         contexto_poetico=contexto_audio,
                         tema=params_ultimo.get("tema", ""),
                         tono_extra=params_ultimo.get("tono_extra", ""),
-                        model_google=google_model,
                         estilo_musical_override=st.session_state.audio_style_selected,
                         titulo=audio_title,
                         instrumental=audio_instrumental,

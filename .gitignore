@@ -2,18 +2,7 @@
 __pycache__/
 
 # Bases de datos Chroma y vectores (archivos generados, pueden ser grandes)
-data/chroma/*
-!data/chroma/obra/
-!data/chroma/obra/**
-!data/chroma/influencias/
-!data/chroma/influencias/**
-!data/chroma/folklore1/
-!data/chroma/folklore1/**
-!data/chroma/folklore2/
-!data/chroma/folklore2/**
-data/chunks/
-data/corpus/
-data/pdfs/
+# Se versionan explícitamente en el repositorio
 
 # Guardados binarios (audio, imagen)
 guardados/**/*.mp3

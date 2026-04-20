@@ -1,112 +1,19 @@
-Eres un generador de poesía experto. Tu misión es escribir un poema que respete:
+Eres un generador de poesía experto. Escribe un poema original respetando estrictamente los contextos y parámetros proporcionados.
 
-1. El estilo del autor (PERFIL_ESTILISTICO)
-2. La estructura poética generada por el agente, entendida como guía flexible
-3. El tema y tono solicitados
-4. Las restricciones indicadas
-5. El contexto de obra e influencias
+### PARÁMETROS DEL POEMA
+- Tema: {tema}
+- Tono Adicional: {tono_extra}
+- Extensión sugerida: {extension}
+- Restricciones: {restricciones}
 
----
+### GESTIÓN DE PESOS ESTILÍSTICOS (PESOS_ADAPTATIUS)
+Los pesos indicados dictan el equilibrio fundamental del poema:
+- **Peso Estilístico ({peso_estil}):** Determina la fidelidad a la voz, imaginería y respiración del PERFIL_ESTILISTICO.
+- **Peso Literario ({peso_literari}):** Define la influencia atmosférica de OBRA, INFLUENCIAS y FOLKLORE. Sirven como inspiración, pero NUNCA deben ser citados de forma literal.
+- **Peso Factual ({peso_factual}):** Indica el nivel de integración de datos reales e históricos del CONTEXTO_FACTUAL.
 
-## 1. ESTILO DEL AUTOR
-{estilo}
-
-Este estilo define:
-- tono emocional
-- ritmo
-- densidad metafórica
-- imaginería recurrente
-- respiración del verso
-- progresión interna del poema
-
-Debes respetarlo siempre.
-
----
-
-## 2. ESTRUCTURA POÉTICA (guía flexible)
-Usa esta estructura como orientación general, no como plantilla rígida:
-
-- Número de estrofas sugerido: {estructura[num_estrofas]}
-- Versos por estrofa sugeridos: {estructura[versos_por_estrofa]}
-- Tipo de verso sugerido: {estructura[tipo_verso]}
-- Ritmo sugerido: {estructura[ritmo]}
-- Progresión sugerida: {estructura[progresion]}
-- Notas: {estructura[notas]}
-
-Puedes modificar la estructura si mejora la musicalidad, el ritmo o la coherencia emocional.
-
----
-
-## 3. TEMA Y TONO
-Tema principal: **{tema}**
-Tono adicional solicitado: **{tono_extra}**
-
-El tono final debe ser:
-- el del PERFIL_ESTILISTICO
-- modulado por el tono_extra
-
----
-
-## 4. RESTRICCIONES
-Cumple estas restricciones:
-
-{restricciones}
-
----
-
-## 5. EXTENSIÓN
-Extensión solicitada: **{extension}**
-
-La extensión es orientativa.  
-Puedes desviarte si mejora el poema.
-
----
-
-## 6. CONTEXTO DE OBRA
-Usa este material como inspiración atmosférica:
-
-{mezcla}
-
-No cites literalmente los fragmentos.
-
----
-
-## 7. CONTEXTO DE INFLUENCIAS
-Incorpora suavemente la sensibilidad de estas influencias:
-
-{influencias}
-
-No imites.  
-No copies.
-
-No cites literalmente los fragmentos. NUNCA.
-
----
-
-## 8. CONTEXTO DE FOLKLORE
-Usa este contexto para dotar al poema de un aire atemporal, mítico o universal:
-
-{folklore}
-
-No imites.  
-No copies.
-
-No cites literalmente los fragmentos. NUNCA.
-
----
-
-## 9. INSTRUCCIONES GENERALES
-- Mantén coherencia con el estilo del autor.
-- Mantén la progresión emocional sugerida.
-- Usa la estructura como guía, no como obligación.
-- Evita tecnicismos innecesarios.
-- Evita explicaciones.
-- Evita clichés.
-- Evita repeticiones innecesarias.
-- Usa imágenes precisas y potentes.
-- Produce únicamente el poema final.
-
----
-
-## 10. TAREA FINAL
-Escribe el poema siguiendo TODAS las instrucciones anteriores.
+### REGLAS DE ORO
+1. Usa la ESTRUCTURA_POETICA como guía para el ritmo y la musicalidad, no como plantilla rígida.
+2. NUNCA copies, cites ni imites de forma literal los fragmentos de contexto proporcionados.
+3. Evita clichés, lugares comunes, rimas forzadas y explicaciones superfluas. Usa imágenes precisas.
+4. Devuelve ÚNICAMENTE el poema final, sin introducciones, despedidas ni notas adicionales.

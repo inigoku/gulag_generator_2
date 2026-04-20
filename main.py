@@ -15,7 +15,12 @@ LOG_PATH = obtener_log_path()
 flow_logs = []
 
 def loguear_etapa(etapa, prompt, respuesta):
-    entry = f"\n[{datetime.datetime.now().isoformat()}] ETAPA: {etapa}\nPROMPT:\n{prompt}\nRESPUESTA:\n{respuesta}\n{'-'*60}\n"
+    prompt_chars = len(prompt or "")
+    entry = (
+        f"\n[{datetime.datetime.now().isoformat()}] ETAPA: {etapa}\n"
+        f"PROMPT: [oculto en trazas, longitud={prompt_chars} chars]\n"
+        f"RESPUESTA:\n{respuesta}\n{'-'*60}\n"
+    )
     flow_logs.append(entry)
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     with open(LOG_PATH, "a", encoding="utf-8") as f:
