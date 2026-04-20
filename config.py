@@ -30,8 +30,8 @@ GROQ_MODEL = get_config("GROQ_MODEL", "llama-3.3-70b-versatile")
 REWORK_RETRIES = int(get_config("REWORK_RETRIES", "3"))
 DIALOG_RETRIES = int(get_config("DIALOG_RETRIES", "2"))
 GOOGLE_API_KEY = get_config("GOOGLE_API_KEY")
-GOOGLE_MODEL = get_config("GOOGLE_MODEL", "gemini-2.0-pro")
-GOOGLE_FAST_MODEL = get_config("GOOGLE_FAST_MODEL", "gemini-2.0-flash")
+GOOGLE_MODEL = get_config("GOOGLE_MODEL", "gemini-pro-latest")
+GOOGLE_FAST_MODEL = get_config("GOOGLE_FAST_MODEL", "gemini-flash-latest")
 # Nota: Usaremos los modelos Lyria que tienes disponibles.
 # Para generación de música, se requiere acceso a APIs específicas.
 GOOGLE_MUSIC_MODEL = get_config("GOOGLE_MUSIC_MODEL", "models/lyria-3-pro-preview")
